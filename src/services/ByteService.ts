@@ -66,4 +66,14 @@ export class ByteService {
     
     return fullCommand;
   }
+  
+  /**
+   * Chuyển Buffer thành chuỗi hex
+   * @param buffer Buffer cần chuyển đổi
+   * @returns Chuỗi hex với các byte cách nhau bởi dấu cách
+   */
+  public static bufferToHexString(buffer: Buffer): string {
+    // Thêm khoảng cách giữa các byte và trả về cả độ dài của buffer
+    return Array.from(buffer).map(byte => byte.toString(16).padStart(2, '0')).join(' ');
+  }
 }
