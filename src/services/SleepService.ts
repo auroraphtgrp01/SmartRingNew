@@ -1,6 +1,7 @@
-import { Device } from 'react-native-ble-plx';
+import { Device, Characteristic } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
 import { ByteService } from './ByteService';
+import BleService from './BleService';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -46,8 +47,23 @@ export class SleepService {
     this.isReceivingSleepData = false;
     
     try {
-      // Bật lắng nghe thông báo
-      await this.setupNotifications(device);
+      // Sử dụng BleService để đăng ký lắng nghe sự kiện
+      // Lưu ý: đây chỉ là để đăng ký lắng nghe các sự kiện chung
+      // Các sự kiện liên quan đến dữ liệu giấc ngủ vẫn cần đăng ký riêng
+      await BleService.getInstance().setupNotifications();
+      
+      // Đăng ký thêm các lắng nghe riêng cho dữ liệu giấc ngủ
+      device.monitorCharacteristicForService(
+        SERVICE_UUID,
+        COMMAND_CHARACTERISTIC_UUID,
+        this.handleCharacteristicUpdate.bind(this, device)
+      );
+      
+      device.monitorCharacteristicForService(
+        SERVICE_UUID,
+        DATA_CHARACTERISTIC_UUID,
+        this.handleCharacteristicUpdate.bind(this, device)
+      );
       
       // Gửi lệnh khởi tạo
       const initCommand = new Uint8Array([0x05, 0x80, 0x07, 0x00, 0x00]);
@@ -86,36 +102,7 @@ export class SleepService {
     }
   }
   
-  /**
-   * Bật lắng nghe thông báo từ các characteristic
-   * @param device Thiết bị BLE đã kết nối
-   */
-  private async setupNotifications(device: Device): Promise<boolean> {
-    if (!device || !device.isConnected) return false;
-    
-    try {
-      // Bật thông báo cho COMMAND_CHARACTERISTIC
-      await device.monitorCharacteristicForService(
-        SERVICE_UUID,
-        COMMAND_CHARACTERISTIC_UUID,
-        this.handleCharacteristicUpdate.bind(this, device)
-      );
-      console.log('Đã bật thông báo cho Command Characteristic');
-      
-      // Bật thông báo cho DATA_CHARACTERISTIC
-      await device.monitorCharacteristicForService(
-        SERVICE_UUID,
-        DATA_CHARACTERISTIC_UUID,
-        this.handleCharacteristicUpdate.bind(this, device)
-      );
-      console.log('Đã bật thông báo cho Data Characteristic');
-      
-      return true;
-    } catch (error) {
-      console.error('Lỗi khi bật thông báo:', error);
-      return false;
-    }
-  }
+
   
   /**
    * Xử lý dữ liệu từ characteristic

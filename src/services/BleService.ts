@@ -160,8 +160,11 @@ class BleService {
 
 
 
-  // Bật lắng nghe thông báo từ các characteristic
-  private async setupNotifications(): Promise<boolean> {
+  /**
+   * Bật lắng nghe thông báo từ các characteristic
+   * @returns true nếu thiết lập thành công, false nếu có lỗi
+   */
+  public async setupNotifications(): Promise<boolean> {
     if (!this.device || !this.isConnected) return false;
     
     try {
