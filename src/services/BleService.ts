@@ -2,6 +2,7 @@ import { BleManager, Device, Characteristic } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
 import { Platform, NativeEventEmitter, NativeModules } from 'react-native';
 import { PermissionsAndroid } from 'react-native';
+import { ByteService } from './ByteService';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -177,55 +178,7 @@ class BleService {
     }
   }
 
-  // Thuật toán tính CRC16 (chuyển từ Java)
-  private crc16_compute(data: Uint8Array, length: number): number {
-    let crc = 0xFFFF; // Giá trị khởi tạo (-1 trong Java)
-    
-    for (let i = 0; i < length; i++) {
-      // Đảo byte của CRC và XOR với byte dữ liệu hiện tại
-      let tmp = (((crc << 8) & 0xFF00) | ((crc >> 8) & 0xFF)) ^ (data[i] & 0xFF);
-      
-      // XOR với byte cao dịch phải 4 bit
-      tmp ^= ((tmp & 0xFF) >> 4);
-      
-      // Các phép biến đổi đặc biệt của thuật toán
-      let tmp2 = tmp ^ ((tmp << 8) << 4);
-      crc = tmp2 ^ (((tmp2 & 0xFF) << 4) << 1);
-    }
-    
-    return crc & 0xFFFF;
-  }
 
-  // Kiểm tra CRC của gói dữ liệu
-  private verifyPacketCRC(data: Buffer): boolean {
-    const length = data.length;
-    
-    // Lấy CRC từ gói dữ liệu (2 byte cuối, byte thấp trước, byte cao sau)
-    const receivedCRC = (data[length-1] << 8) | data[length-2];
-    
-    // Tính CRC cho phần dữ liệu (bỏ 2 byte CRC cuối)
-    const calculatedCRC = this.crc16_compute(data.slice(0, length-2), length-2);
-    
-    return receivedCRC === calculatedCRC;
-  }
-
-  // Tạo gói lệnh có CRC
-  private createCommandWithCRC(command: Uint8Array): Buffer {
-    // Tính CRC16
-    const crc = this.crc16_compute(command, command.length);
-    const crcLow = crc & 0xFF;
-    const crcHigh = (crc >> 8) & 0xFF;
-    
-    // Tạo buffer đầy đủ với CRC
-    const fullCommand = Buffer.alloc(command.length + 2);
-    command.forEach((byte, index) => {
-      fullCommand[index] = byte;
-    });
-    fullCommand[command.length] = crcLow;
-    fullCommand[command.length + 1] = crcHigh;
-    
-    return fullCommand;
-  }
 
   // Bật lắng nghe thông báo từ các characteristic
   private async setupNotifications(): Promise<boolean> {
@@ -258,27 +211,28 @@ class BleService {
   // Xử lý dữ liệu từ characteristic
   private handleCharacteristicUpdate(error: Error | null, characteristic: Characteristic | null): void {
     if (error) {
-      console.error('Lỗi khi nhận dữ liệu từ characteristic:', error);
+      console.error('Lỗi khi nhận dữ liệu:', error);
       return;
     }
     
+    // Đảm bảo có dữ liệu
     if (!characteristic || !characteristic.value) return;
     
-    // Giải mã dữ liệu Base64
-    const data = Buffer.from(characteristic.value, 'base64');
+    // Giải mã giá trị nhận được từ Base64
+    const buffer = Buffer.from(characteristic.value, 'base64');
     
-    console.log(`>> Nhận dữ liệu từ ${characteristic.uuid}: \n\n`, this.bufferToHexString(data), `\n(Độ dài: ${data.length} bytes)`);
+    console.log(`Nhận dữ liệu từ ${characteristic.uuid}: ${this.bufferToHexString(buffer)} (Độ dài: ${buffer.length} bytes)`);
     
-    // Kiểm tra CRC
-    if (!this.verifyPacketCRC(data)) {
-      console.error('Lỗi CRC trong gói dữ liệu');
+    // Kiểm tra CRC của gói dữ liệu
+    if (!ByteService.verifyPacketCRC(buffer)) {
+      console.error('CRC không hợp lệ! Bỏ qua gói dữ liệu');
       return;
     }
     
-    // Nếu đây là characteristic gửi lệnh
+    // Xử lý dữ liệu từ characteristic lệnh (COMMAND_CHARACTERISTIC)
     if (characteristic.uuid.toLowerCase() === COMMAND_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói thông tin giấc ngủ không (0x0504)
-      if (data[0] === 0x05 && data[1] === 0x04) {
+      if (buffer[0] === 0x05 && buffer[1] === 0x04) {
         console.log('Nhận được gói thông tin giấc ngủ');
         this.isReceivingSleepData = true;
         this.sleepDataPackets = [];
@@ -289,18 +243,18 @@ class BleService {
       }
     }
     
-    // Nếu đây là characteristic dữ liệu chính
-    if (characteristic.uuid.toLowerCase() === DATA_CHARACTERISTIC_UUID.toLowerCase()) {
+    // Xử lý dữ liệu từ characteristic dữ liệu (DATA_CHARACTERISTIC)
+    else if (characteristic.uuid.toLowerCase() === DATA_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói dữ liệu giấc ngủ không (0x0513)
-      if (data[0] === 0x05 && data[1] === 0x13 && this.isReceivingSleepData) {
+      if (buffer[0] === 0x05 && buffer[1] === 0x13 && this.isReceivingSleepData) {
         console.log('Nhận được gói dữ liệu giấc ngủ');
         
         // Lấy độ dài gói
-        const length = (data[2] << 8) + data[3];
+        const length = (buffer[2] << 8) + buffer[3];
         
         // Lấy payload (bỏ header 4 byte và CRC 2 byte cuối)
-        // Chú ý: data.length - 2 là độ dài gói tính từ đầu, bỏ 2 byte CRC cuối
-        const payload = data.slice(4, data.length - 2);
+        // Chú ý: buffer.length - 2 là độ dài gói tính từ đầu, bỏ 2 byte CRC cuối
+        const payload = buffer.slice(4, buffer.length - 2);
         
         // Thêm vào mảng gói dữ liệu
         this.sleepDataPackets.push(payload);
@@ -373,7 +327,7 @@ class BleService {
       
       // Gửi lệnh khởi tạo
       const initCommand = new Uint8Array([0x05, 0x80, 0x07, 0x00, 0x00]);
-      const finalInitCommand = this.createCommandWithCRC(initCommand);
+      const finalInitCommand = ByteService.createCommandWithCRC(initCommand);
       
       console.log('Gửi lệnh khởi tạo:', this.bufferToHexString(finalInitCommand), `(Độ dài: ${finalInitCommand.length} bytes)`)
       
@@ -388,7 +342,7 @@ class BleService {
       
       // Gửi lệnh lấy dữ liệu giấc ngủ
       const sleepCommand = new Uint8Array([0x05, 0x04, 0x06, 0x00]);
-      const finalSleepCommand = this.createCommandWithCRC(sleepCommand);
+      const finalSleepCommand = ByteService.createCommandWithCRC(sleepCommand);
       
       console.log('Gửi lệnh lấy dữ liệu giấc ngủ:', this.bufferToHexString(finalSleepCommand), `(Độ dài: ${finalSleepCommand.length} bytes)`)
       
