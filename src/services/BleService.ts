@@ -267,7 +267,7 @@ class BleService {
     // Giải mã dữ liệu Base64
     const data = Buffer.from(characteristic.value, 'base64');
     
-    console.log(`>> Nhận dữ liệu từ ${characteristic.uuid}: \n\n`, this.bufferToHexString(data), `\n(Độ dài: ${data.length} bytes)`)
+    console.log(`>> Nhận dữ liệu từ ${characteristic.uuid}: \n\n`, this.bufferToHexString(data), `\n(Độ dài: ${data.length} bytes)`);
     
     // Kiểm tra CRC
     if (!this.verifyPacketCRC(data)) {
@@ -282,6 +282,10 @@ class BleService {
         console.log('Nhận được gói thông tin giấc ngủ');
         this.isReceivingSleepData = true;
         this.sleepDataPackets = [];
+        
+        // Lấy thông tin từ gói thông tin giấc ngủ (nếu cần)
+        // Có thể lưu thông tin này để sử dụng trong quá trình phân tích sau này
+        // Ví dụ: số lượng bản ghi, thời gian bắt đầu/kết thúc, v.v.
       }
     }
     
@@ -294,8 +298,9 @@ class BleService {
         // Lấy độ dài gói
         const length = (data[2] << 8) + data[3];
         
-        // Lấy payload (bỏ header 4 byte và checksum 2 byte)
-        const payload = data.slice(4, length - 2);
+        // Lấy payload (bỏ header 4 byte và CRC 2 byte cuối)
+        // Chú ý: data.length - 2 là độ dài gói tính từ đầu, bỏ 2 byte CRC cuối
+        const payload = data.slice(4, data.length - 2);
         
         // Thêm vào mảng gói dữ liệu
         this.sleepDataPackets.push(payload);
@@ -318,7 +323,7 @@ class BleService {
     // Đặt timeout mới - nếu không có gói mới trong 3 giây, coi như đã nhận đủ dữ liệu
     this.dataTimeoutId = setTimeout(() => {
       if (this.isReceivingSleepData && this.sleepDataPackets.length > 0) {
-        console.log(`Đã nhận ${this.sleepDataPackets.length} gói dữ liệu giấc ngủ, tiến hành phân tích`);
+        console.log(`Đã nhận ${this.sleepDataPackets.length} gói dữ liệu giấc ngủ, tiến hành ghép dữ liệu`);
         
         // Log kích thước của mỗi gói dữ liệu
         this.sleepDataPackets.forEach((packet, index) => {
@@ -327,11 +332,29 @@ class BleService {
         
         // Kết hợp tất cả các gói lại
         const combinedData = Buffer.concat(this.sleepDataPackets);
+        console.log(`Dữ liệu sau khi ghép: ${this.bufferToHexString(combinedData)} (Tổng độ dài: ${combinedData.length} bytes)`);
+        
+        // Lưu trữ dữ liệu đã ghép để sử dụng sau (nếu cần)
+        // Có thể thêm các bước phân tích dữ liệu sau này
+        
+        // Gọi callback với dữ liệu đã ghép hoặc null
+        if (this.sleepDataCallback) {
+          // Gọi với null vì chưa phân tích dữ liệu
+          this.sleepDataCallback(null);
+        }
         
         this.isReceivingSleepData = false;
       }
     }, 3000); // 3 giây không nhận được gói mới sẽ coi là đã xong
   }
+  
+  // Hàm mẫu để sau này phân tích dữ liệu giấc ngủ (chưa sử dụng trong phiên bản hiện tại)
+  /*
+  private parseSleepData(data: Buffer): SleepData | null {
+    // Các bước phân tích dữ liệu giấc ngủ sẽ được thực hiện sau
+    return null;
+  }
+  */
 
   // Gửi lệnh lấy dữ liệu giấc ngủ
   public async getSleepData(callback: (data: SleepData[] | null) => void): Promise<boolean> {
