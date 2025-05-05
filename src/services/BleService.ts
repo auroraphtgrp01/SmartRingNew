@@ -267,7 +267,7 @@ class BleService {
     // Giải mã dữ liệu Base64
     const data = Buffer.from(characteristic.value, 'base64');
     
-    console.log(`Nhận dữ liệu từ ${characteristic.uuid}:`, this.bufferToHexString(data));
+    console.log(`>> Nhận dữ liệu từ ${characteristic.uuid}: \n\n`, this.bufferToHexString(data), `\n(Độ dài: ${data.length} bytes)`)
     
     // Kiểm tra CRC
     if (!this.verifyPacketCRC(data)) {
@@ -320,103 +320,17 @@ class BleService {
       if (this.isReceivingSleepData && this.sleepDataPackets.length > 0) {
         console.log(`Đã nhận ${this.sleepDataPackets.length} gói dữ liệu giấc ngủ, tiến hành phân tích`);
         
+        // Log kích thước của mỗi gói dữ liệu
+        this.sleepDataPackets.forEach((packet, index) => {
+          console.log(`Gói dữ liệu ${index + 1}: ${this.bufferToHexString(packet)} (Độ dài: ${packet.length} bytes)`);
+        });
+        
         // Kết hợp tất cả các gói lại
         const combinedData = Buffer.concat(this.sleepDataPackets);
         
-        // Phân tích dữ liệu
-        const sleepResults = this.parseSleepData(combinedData);
-        
-        // Đánh dấu đã xong
         this.isReceivingSleepData = false;
-        
-        // Gọi callback nếu có
-        if (this.sleepDataCallback) {
-          this.sleepDataCallback(sleepResults);
-        }
       }
     }, 3000); // 3 giây không nhận được gói mới sẽ coi là đã xong
-  }
-
-  // Phân tích dữ liệu giấc ngủ từ buffer
-  private parseSleepData(data: Buffer): SleepData[] {
-    // Mảng kết quả
-    const results: SleepData[] = [];
-    
-    // Ví dụ đơn giản về cách parse - cần điều chỉnh theo định dạng thực tế
-    let offset = 0;
-    
-    while (offset < data.length) {
-      // Tạo mẫu SleepData
-      const sleepItem: SleepData = {
-        deepSleepCount: 0,
-        lightSleepCount: 0,
-        startTime: 0,
-        endTime: 0,
-        deepSleepTotal: 0,
-        lightSleepTotal: 0,
-        rapidEyeMovementTotal: 0,
-        sleepData: [],
-        wakeCount: 0,
-        wakeDuration: 0
-      };
-      
-      // Parse dữ liệu - cần hiểu rõ cấu trúc dữ liệu thực tế
-      // Đây là mẫu phỏng đoán dựa trên phân tích
-      if (offset + 20 <= data.length) {
-        // Lấy thời gian bắt đầu và kết thúc
-        sleepItem.startTime = data.readUInt32LE(offset) * 1000; // Chuyển từ timestamp Unix sang JavaScript
-        offset += 4;
-        
-        sleepItem.endTime = data.readUInt32LE(offset) * 1000;
-        offset += 4;
-        
-        // Số chu kỳ ngủ sâu và ngủ nhẹ
-        sleepItem.deepSleepCount = data.readUInt16LE(offset);
-        offset += 2;
-        
-        sleepItem.lightSleepCount = data.readUInt16LE(offset);
-        offset += 2;
-        
-        // Thời gian ngủ sâu và ngủ nhẹ (phút)
-        sleepItem.deepSleepTotal = data.readUInt16LE(offset);
-        offset += 2;
-        
-        sleepItem.lightSleepTotal = data.readUInt16LE(offset);
-        offset += 2;
-        
-        // Thông tin về chu kỳ REM và thức giấc
-        sleepItem.rapidEyeMovementTotal = data.readUInt16LE(offset);
-        offset += 2;
-        
-        sleepItem.wakeCount = data.readUInt16LE(offset);
-        offset += 2;
-        
-        sleepItem.wakeDuration = data.readUInt16LE(offset);
-        offset += 2;
-        
-        // Phần còn lại của dữ liệu - chi tiết về các đoạn ngủ
-        while (offset + 6 <= data.length) {
-          const sleepSegment = {
-            sleepStartTime: data.readUInt32LE(offset) * 1000,
-            sleepLen: data.readUInt16LE(offset + 4),
-            sleepType: data[offset + 6]
-          };
-          
-          sleepItem.sleepData.push(sleepSegment);
-          offset += 7; // Mỗi đoạn dài 7 byte
-          
-          // Kiểm tra nếu đã hết dữ liệu
-          if (offset >= data.length) break;
-        }
-        
-        results.push(sleepItem);
-      } else {
-        // Không đủ dữ liệu, thoát khỏi vòng lặp
-        break;
-      }
-    }
-    
-    return results;
   }
 
   // Gửi lệnh lấy dữ liệu giấc ngủ
@@ -438,7 +352,7 @@ class BleService {
       const initCommand = new Uint8Array([0x05, 0x80, 0x07, 0x00, 0x00]);
       const finalInitCommand = this.createCommandWithCRC(initCommand);
       
-      console.log('Gửi lệnh khởi tạo:', this.bufferToHexString(finalInitCommand));
+      console.log('Gửi lệnh khởi tạo:', this.bufferToHexString(finalInitCommand), `(Độ dài: ${finalInitCommand.length} bytes)`)
       
       await this.device.writeCharacteristicWithResponseForService(
         SERVICE_UUID,
@@ -453,7 +367,7 @@ class BleService {
       const sleepCommand = new Uint8Array([0x05, 0x04, 0x06, 0x00]);
       const finalSleepCommand = this.createCommandWithCRC(sleepCommand);
       
-      console.log('Gửi lệnh lấy dữ liệu giấc ngủ:', this.bufferToHexString(finalSleepCommand));
+      console.log('Gửi lệnh lấy dữ liệu giấc ngủ:', this.bufferToHexString(finalSleepCommand), `(Độ dài: ${finalSleepCommand.length} bytes)`)
       
       await this.device.writeCharacteristicWithResponseForService(
         SERVICE_UUID,
@@ -473,7 +387,8 @@ class BleService {
 
   // Hàm tiện ích chuyển Buffer thành chuỗi hex
   private bufferToHexString(buffer: Buffer): string {
-    return Array.from(buffer).map(byte => byte.toString(16).padStart(2, '0')).join('');
+    // Thêm khoảng cách giữa các byte và trả về cả độ dài của buffer
+    return Array.from(buffer).map(byte => byte.toString(16).padStart(2, '0')).join(' ');
   }
 }
 
