@@ -1,11 +1,11 @@
 import { Device, Characteristic } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
 import { ByteService } from '../core/ByteService';
-import BleService from '../core/BleService';
 import { Constants } from '../constants';
 import { unpackHealthData } from '../core/UnpackData';
 import { FinalDataService } from './FinalDataService';
 import { SyncHealthDataIntoCloud } from './SyncHealthDataIntoCloud';
+// Không import BleService trực tiếp để tránh chu trình yêu cầu
 
 export abstract class BaseHealthService<T> {
   protected dataPackets: Array<Buffer> = [];
@@ -36,6 +36,8 @@ export abstract class BaseHealthService<T> {
     this.dataType = dataType;
     
     try {
+      // Sử dụng require để tránh chu trình yêu cầu
+      const BleService = require('../core/BleService').default;
       await BleService.getInstance().setupNotifications();
       
       device.monitorCharacteristicForService(

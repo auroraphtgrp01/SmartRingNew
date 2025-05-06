@@ -23,7 +23,7 @@ const DeviceItem: React.FC<DeviceItemProps> = ({ device, onPress, isConnecting }
       activeOpacity={0.7}
     >
       <View style={styles.iconContainer}>
-        <MaterialCommunityIcons name={"smartwatch" as any} size={24} color="#40A9FF" />
+        <MaterialCommunityIcons name="ring" size={24} color="#40A9FF" />
       </View>
       
       <View style={styles.infoContainer}>
