@@ -1,0 +1,29 @@
+export class Constants {
+  static DATA_SLEEP_TYPE = {
+    awake: 244,
+    deepSleep: 241,
+    lightSleep: 242,
+    naps: 245,
+    rem: 243,
+    unknow: -1,
+  }
+
+  static DATA_UNPACK_TYPE = {
+    sportHistory: 2,
+    sleepHistory: 4,
+    heartHistory: 6,
+    bloodPressureHistory: 8,
+    comprehensiveMeasurement: 9
+  }
+
+  static UUID = {
+    SERVICE_UUID: 'be940000-7333-be46-b7ae-689e71722bd5',
+    COMMAND_CHARACTERISTIC_UUID: 'be940001-7333-be46-b7ae-689e71722bd5',
+    DATA_CHARACTERISTIC_UUID: 'be940003-7333-be46-b7ae-689e71722bd5'
+  }
+
+  static COMMAND_BYTE = {
+    INIT_HEALTH_BLOCK: new Uint8Array([0x05, 0x80, 0x07, 0x00, 0x00]),
+    GET_SLEEP_HISTORY: new Uint8Array([0x05, 0x04, 0x06, 0x00])
+  }
+}

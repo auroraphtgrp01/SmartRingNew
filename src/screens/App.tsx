@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Alert, Platform, AppState, AppStateStatus, ScrollView, ActivityIndicator, FlatList } from 'react-native';
 import { Device } from 'react-native-ble-plx';
-import BleService, { SleepData } from '../services/BleService';
+import BleService from '../core/BleService';
 
 export default function App() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -9,7 +9,7 @@ export default function App() {
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [isFetchingSleepData, setIsFetchingSleepData] = useState<boolean>(false);
-  const [sleepData, setSleepData] = useState<SleepData[] | null>(null);
+  const [sleepData, setSleepData] = useState<any[] | null>(null);
   const [appState, setAppState] = useState<string>(AppState.currentState);
 
   // Khởi tạo BleService

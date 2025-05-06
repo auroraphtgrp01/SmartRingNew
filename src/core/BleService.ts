@@ -3,7 +3,7 @@ import { Buffer } from 'buffer';
 import { Platform, NativeEventEmitter, NativeModules } from 'react-native';
 import { PermissionsAndroid } from 'react-native';
 import { ByteService } from './ByteService';
-import SleepService from './SleepService';
+import SleepService from '../services/SleepService';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -77,7 +77,7 @@ class BleService {
 
       if (device) {
         // Lọc chỉ các thiết bị có tên và tên chứa "Ring" hoặc "R12"
-        if (device.name && (device.name.includes('Ring') || device.name.includes('R12'))) {
+        if (device.name && (device.name.includes('R12'))) {
           // Kiểm tra xem thiết bị đã tồn tại trong danh sách chưa
           const existingDeviceIndex = devices.findIndex(d => d.id === device.id);
           if (existingDeviceIndex === -1) {
