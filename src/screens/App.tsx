@@ -200,6 +200,30 @@ export default function App() {
     }
   };
 
+  const getComprehensiveData =async () => {
+    if (!connectedDevice) {
+      Alert.alert('Lỗi', 'Vui lòng kết nối với thiết bị trước');
+      return;
+    }
+
+    setIsFetchingSleepData(true);
+
+    try {
+      await bleService.getComprehensiveData((data) => {
+        setIsFetchingSleepData(false);
+        if (data) {
+          console.log('Dữ liệu nhịp tim:', data);
+        } else {
+          Alert.alert('Không có dữ liệu', 'Không nhận được dữ liệu nhịp tim từ thiết bị');
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu thể thao:', error);
+      setIsFetchingSleepData(false);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi lấy dữ liệu thể thao');
+    }
+  };
+
 
   // Hàm định dạng thời gian
   const formatDate = (timestamp: number) => {
@@ -278,6 +302,12 @@ export default function App() {
             onPress={getBloodPressureData}
           >
             <Text style={styles.buttonText}>Lấy Dữ Liệu Huyết Áp</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.buttonDisconnect} 
+            onPress={getComprehensiveData}
+          >
+            <Text style={styles.buttonText}>Lấy Dữ Liệu Tổng Hợp</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
