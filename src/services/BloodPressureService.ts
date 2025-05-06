@@ -6,6 +6,7 @@ import { BaseHealthService } from './BaseHealthService';
 
 export class BloodPressureService extends BaseHealthService<any[]> {
   private static instance: BloodPressureService;
+  public static DATATYPE = 8
   
   private constructor() {
     super();
@@ -19,9 +20,8 @@ export class BloodPressureService extends BaseHealthService<any[]> {
   }
   
   public async getBloodPressureData(device: Device, callback: (data: any[] | null) => void): Promise<boolean> {
-    // Chuyển đổi Uint8Array thành Buffer
     const bloodPressureCommand = Buffer.from(Constants.COMMAND_BYTE.GET_BLOOD_PRESSURE_HISTORY);
-    return this.getData(device, callback, bloodPressureCommand, 'huyết áp');
+    return this.getData(device, callback, bloodPressureCommand, 'huyết áp', BloodPressureService.DATATYPE);
   }
 
   protected handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {

@@ -6,6 +6,7 @@ import { BaseHealthService } from './BaseHealthService';
 
 export class SportService extends BaseHealthService<any[]> {
   private static instance: SportService;
+  public static DATATYPE = 2
   
   private constructor() {
     super();
@@ -19,9 +20,8 @@ export class SportService extends BaseHealthService<any[]> {
   }
   
   public async getSportData(device: Device, callback: (data: any[] | null) => void): Promise<boolean> {
-    // Chuyển đổi Uint8Array thành Buffer
     const sportCommand = Buffer.from(Constants.COMMAND_BYTE.GET_SPORT_HISTORY);
-    return this.getData(device, callback, sportCommand, 'thể thao');
+    return this.getData(device, callback, sportCommand, 'thể thao', SportService.DATATYPE);
   }
 
   protected handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {

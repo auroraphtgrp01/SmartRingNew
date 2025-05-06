@@ -6,6 +6,7 @@ import { BaseHealthService } from './BaseHealthService';
 
 export class ComprehensiveService extends BaseHealthService<any[]> {
   private static instance: ComprehensiveService;
+  public static DATATYPE = 9
   
   private constructor() {
     super();
@@ -19,9 +20,8 @@ export class ComprehensiveService extends BaseHealthService<any[]> {
   }
   
   public async getComprehensiveData(device: Device, callback: (data: any[] | null) => void): Promise<boolean> {
-    // Chuyển đổi Uint8Array thành Buffer
     const comprehensiveCommand = Buffer.from(Constants.COMMAND_BYTE.GET_COMPREHENSIVE_MEASUREMENT);
-    return this.getData(device, callback, comprehensiveCommand, 'đo tổng hợp');
+    return this.getData(device, callback, comprehensiveCommand, 'đo tổng hợp', ComprehensiveService.DATATYPE);
   }
 
   protected handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {

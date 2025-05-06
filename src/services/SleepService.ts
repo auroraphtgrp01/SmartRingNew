@@ -6,6 +6,7 @@ import { BaseHealthService } from './BaseHealthService';
 
 export class SleepService extends BaseHealthService<any[]> {
   private static instance: SleepService;
+  public static DATATYPE = 4
   
   private constructor() {
     super();
@@ -21,7 +22,7 @@ export class SleepService extends BaseHealthService<any[]> {
   public async getSleepData(device: Device, callback: (data: any[] | null) => void): Promise<boolean> {
     // Chuyển đổi Uint8Array thành Buffer
     const sleepCommand = Buffer.from(Constants.COMMAND_BYTE.GET_SLEEP_HISTORY);
-    return this.getData(device, callback, sleepCommand, 'giấc ngủ');
+    return this.getData(device, callback, sleepCommand, 'giấc ngủ', SleepService.DATATYPE);
   }
 
   protected handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {

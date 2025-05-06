@@ -9,21 +9,16 @@ export abstract class BaseHealthService<T> {
   protected isReceivingData: boolean = false;
   protected dataCallback: ((data: T | null) => void) | null = null;
   protected dataTimeoutId: NodeJS.Timeout | null = null;
+  protected dataType: number = 0;
   
   protected constructor() {}
-  
-  /**
-   * Lấy dữ liệu sức khỏe từ thiết bị
-   * @param device Thiết bị BLE đã kết nối
-   * @param callback Hàm callback để nhận dữ liệu
-   * @param dataCommand Lệnh để lấy dữ liệu cụ thể
-   * @param logPrefix Tiền tố cho log
-   */
+ 
   protected async getData(
     device: Device, 
     callback: (data: T | null) => void, 
     dataCommand: Buffer,
-    logPrefix: string
+    logPrefix: string,
+    dataType: number
   ): Promise<boolean> {
     if (!device || !device.isConnected) {
       callback(null);
@@ -33,6 +28,7 @@ export abstract class BaseHealthService<T> {
     this.dataCallback = callback;
     this.dataPackets = [];
     this.isReceivingData = false;
+    this.dataType = dataType;
     
     try {
       await BleService.getInstance().setupNotifications();
@@ -78,14 +74,8 @@ export abstract class BaseHealthService<T> {
     }
   }
 
-  /**
-   * Xử lý dữ liệu nhận được từ thiết bị
-   */
   protected abstract handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void;
   
-  /**
-   * Kiểm tra thời gian chờ dữ liệu và ghép dữ liệu khi hoàn tất
-   */
   protected startDataTimeoutCheck(
     isReceivingData: boolean,
     dataPackets: Array<Buffer>,
@@ -98,10 +88,11 @@ export abstract class BaseHealthService<T> {
     
     this.dataTimeoutId = setTimeout(() => {
       if (isReceivingData && dataPackets.length > 0) {
+        console.log(">>>>>> dataType: ", this.dataType)
         console.log(`Đã nhận ${dataPackets.length} gói dữ liệu ${logPrefix}, tiến hành ghép dữ liệu`);
         
         dataPackets.forEach((packet, index) => {
-          console.log(`Gói dữ liệu ${index + 1}: ${ByteService.bufferToHexString(packet)} (Độ dài: ${packet.length} bytes)`);
+          console.log(`Độ dài: ${packet.length} bytes`);
         });
         
         const combinedData = Buffer.concat(dataPackets);
@@ -114,7 +105,6 @@ export abstract class BaseHealthService<T> {
   }
 }
 
-// Service để đồng bộ tất cả dữ liệu sức khỏe
 export class HealthSyncService {
   private static instance: HealthSyncService;
   
@@ -127,15 +117,9 @@ export class HealthSyncService {
     return HealthSyncService.instance;
   }
   
-  /**
-   * Đồng bộ tất cả dữ liệu sức khỏe từ thiết bị
-   * @param device Thiết bị BLE đã kết nối
-   * @param onProgress Callback để cập nhật tiến trình (0-100)
-   * @param onComplete Callback khi hoàn tất tất cả
-   */
   public async syncHealthData(
     device: Device, 
-    onProgress?: (progress: number, currentService: string) => void,
+    onProgress?: (progress: number, currentService: string, dataType: number) => void,
     onComplete?: () => void
   ): Promise<boolean> {
     if (!device || !device.isConnected) {
@@ -153,27 +137,28 @@ export class HealthSyncService {
       // Danh sách các service cần đồng bộ
       type ServiceItem = {
         name: string;
+        dataType: number;
         service: any;
         method: string;
       };
       
       const services: ServiceItem[] = [
-        { name: 'Nhịp tim', service: HeartHistoryService.getInstance(), method: 'getHeartData' },
-        { name: 'Giấc ngủ', service: SleepService.getInstance(), method: 'getSleepData' },
-        { name: 'Thể thao', service: SportService.getInstance(), method: 'getSportData' },
-        { name: 'Huyết áp', service: BloodPressureService.getInstance(), method: 'getBloodPressureData' },
-        { name: 'Đo tổng hợp', service: ComprehensiveService.getInstance(), method: 'getComprehensiveData' }
+        { name: 'Nhịp tim', dataType: HeartHistoryService.DATATYPE, service: HeartHistoryService.getInstance(), method: 'getHeartData' },
+        { name: 'Giấc ngủ', dataType: SleepService.DATATYPE, service: SleepService.getInstance(), method: 'getSleepData' },
+        { name: 'Thể thao', dataType: SportService.DATATYPE, service: SportService.getInstance(), method: 'getSportData' },
+        { name: 'Huyết áp', dataType: BloodPressureService.DATATYPE, service: BloodPressureService.getInstance(), method: 'getBloodPressureData' },
+        { name: 'Đo tổng hợp', dataType: ComprehensiveService.DATATYPE, service: ComprehensiveService.getInstance(), method: 'getComprehensiveData' }
       ];
       
       // Đồng bộ tuần tự từng service
       for (let i = 0; i < services.length; i++) {
-        const { name, service, method } = services[i];
+        const { name, dataType, service, method } = services[i];
         const progress = Math.floor((i / services.length) * 100);
         
         if (onProgress) {
-          onProgress(progress, name);
+          onProgress(progress, name, dataType);
         }
-        
+
         // Đợi dữ liệu từ service hiện tại
         await new Promise<void>((resolve) => {
           (service as any)[method](device, (data: any) => {
@@ -187,7 +172,7 @@ export class HealthSyncService {
       }
       
       if (onProgress) {
-        onProgress(100, 'Hoàn tất');
+        onProgress(100, 'Hoàn tất', 0);
       }
       
       if (onComplete) {
