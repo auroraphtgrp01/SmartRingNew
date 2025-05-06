@@ -1,13 +1,13 @@
-interface SportDataResponse {
-    code: number;
-    data: SportData[];
-    dataType: number;
-  }
-  
-  interface SportData {
-    sportCalorie: number;
-    sportDistance: number;
-    sportEndTime: string;
-    sportStartTime: string;
-    sportStep: number;
-  }
+interface SportDataItem {
+  sportCalorie: number;
+  sportDistance: number;
+  sportEndTime: string;
+  sportStartTime: string;
+  sportStep: number;
+}
+
+interface SportData {
+  code: number;
+  data: SportDataItem[];
+  dataType: number;
+}

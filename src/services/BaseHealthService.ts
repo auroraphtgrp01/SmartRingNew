@@ -5,6 +5,7 @@ import BleService from '../core/BleService';
 import { Constants } from '../constants';
 import { unpackHealthData } from '../core/UnpackData';
 import { FinalDataService } from './FinalDataService';
+import { SyncHealthDataIntoCloud } from './SyncHealthDataIntoCloud';
 
 export abstract class BaseHealthService<T> {
   protected dataPackets: Array<Buffer> = [];
@@ -110,26 +111,33 @@ export abstract class BaseHealthService<T> {
   }
 
   protected handleMappingData(data: Record<string, any>, dataType: number) {
+    const finalDataInstance = FinalDataService.getInstance();
+    const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
     switch (dataType) {
       case Constants.DATA_TYPE.sleepHistory:
-        const finalSleepData = FinalDataService.getInstance().getFinalSleepData(data)
-        console.log('Dữ liệu giấc ngủ:', finalSleepData);
+        const finalSleepData = finalDataInstance.getFinalSleepData(data)
+        // console.log('Dữ liệu giấc ngủ:', finalSleepData);
+        syncDataInstance.saveLocallyData(finalSleepData, 'sleepHistory');
         break;
       case Constants.DATA_TYPE.sportHistory:
-        const finalSportData = FinalDataService.getInstance().getFinalSportData(data)
-        console.log('Dữ liệu thể thao:', finalSportData);
+        const finalSportData = finalDataInstance.getFinalSportData(data)
+        // console.log('Dữ liệu thể thao:', finalSportData);
+        syncDataInstance.saveLocallyData(finalSportData, 'sportHistory');
         break;
       case Constants.DATA_TYPE.heartHistory:
-        const finalHeartData = FinalDataService.getInstance().getFinalHeartData(data)
-        console.log('Dữ liệu nhịp tim:', finalHeartData);
+        const finalHeartData = finalDataInstance.getFinalHeartData(data)
+        // console.log('Dữ liệu nhịp tim:', finalHeartData);
+        syncDataInstance.saveLocallyData(finalHeartData, 'heartHistory');
         break;
       case Constants.DATA_TYPE.bloodPressureHistory:
-        const finalBloodPressureData = FinalDataService.getInstance().getFinalBloodPressureData(data)
-        console.log('Dữ liệu huyết áp:', finalBloodPressureData);
+        const finalBloodPressureData = finalDataInstance.getFinalBloodPressureData(data)
+        // console.log('Dữ liệu huyết áp:', finalBloodPressureData);
+        syncDataInstance.saveLocallyData(finalBloodPressureData, 'bloodPressureHistory');
         break;
       case Constants.DATA_TYPE.comprehensiveMeasurement:
-        const finalComprehensiveData = FinalDataService.getInstance().getFinalComprehensiveMeasurementData(data)
-        console.log('Dữ liệu đo tổng hợp:', finalComprehensiveData);  
+        const finalComprehensiveData = finalDataInstance.getFinalComprehensiveMeasurementData(data)
+        // console.log('Dữ liệu đo tổng hợp:', finalComprehensiveData);  
+        syncDataInstance.saveLocallyData(finalComprehensiveData, 'comprehensiveMeasurement');
         break;
     }
   }
@@ -208,6 +216,9 @@ export class HealthSyncService {
       if (onComplete) {
         onComplete();
       }
+      
+      const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
+      syncDataInstance.startSync();
       
       return true;
     } catch (error) {
