@@ -121,40 +121,30 @@ export class SleepService {
         this.sleepDataPackets.push(payload);
         
         // Bắt đầu bộ đếm timeout để kiểm tra khi nào dữ liệu hoàn tất
-        this.startDataTimeoutCheck();
+        this.startDataTimeoutCheck((data: any) => {
+         console.log(data.toString())
+        });
       }
     }
   }
  
-  private startDataTimeoutCheck(): void {
-    // Xóa timeout hiện tại nếu có
+  private startDataTimeoutCheck(onMerge: (data: any) => any): void {
     if (this.dataTimeoutId) {
       clearTimeout(this.dataTimeoutId);
     }
     
-    // Đặt timeout mới - nếu không có gói mới trong 3 giây, coi như đã nhận đủ dữ liệu
     this.dataTimeoutId = setTimeout(() => {
       if (this.isReceivingSleepData && this.sleepDataPackets.length > 0) {
         console.log(`Đã nhận ${this.sleepDataPackets.length} gói dữ liệu giấc ngủ, tiến hành ghép dữ liệu`);
         
-        // Log kích thước của mỗi gói dữ liệu
         this.sleepDataPackets.forEach((packet, index) => {
           console.log(`Gói dữ liệu ${index + 1}: ${ByteService.bufferToHexString(packet)} (Độ dài: ${packet.length} bytes)`);
         });
         
-        // Kết hợp tất cả các gói lại
         const combinedData = Buffer.concat(this.sleepDataPackets);
-        console.log(`Dữ liệu sau khi ghép: ${ByteService.bufferToHexString(combinedData)} (Tổng độ dài: ${combinedData.length} bytes)`);
-        
-        // Lưu trữ dữ liệu đã ghép để sử dụng sau (nếu cần)
-        // Có thể thêm các bước phân tích dữ liệu sau này
-        
-        // Gọi callback với dữ liệu đã ghép hoặc null
-        if (this.sleepDataCallback) {
-          // Gọi với null vì chưa phân tích dữ liệu
-          this.sleepDataCallback(null);
-        }
-        
+        const convertToUnit8 = new Uint8Array(combinedData)
+        console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
+        onMerge(convertToUnit8);
         this.isReceivingSleepData = false;
       }
     }, 1500); 
