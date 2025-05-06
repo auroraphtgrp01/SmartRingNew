@@ -18,13 +18,14 @@ import BleService from '../core/BleService';
 import { useBloodPressureHistory, useComprehensiveHistory, useHeartHistory, useSleepHistory, useSportHistory } from '../contexts';
 
 interface HomeScreenProps {
-  device: Device;
+  device: Device | null;
   onNavigateToHeartRate: () => void;
   onNavigateToSpO2: () => void;
   onNavigateToSleepStats: () => void;
   onNavigateToHealthStats: () => void;
   onDisconnect: () => void;
-  bleService: BleService;
+  bleService: BleService | null;
+  onConnect?: () => void;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ 
@@ -34,7 +35,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToSleepStats, 
   onNavigateToHealthStats, 
   onDisconnect,
-  bleService
+  bleService,
+  onConnect
 }) => {
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [syncProgress, setSyncProgress] = React.useState(0);
@@ -96,6 +98,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   }, [isSyncing]);
 
   const syncHealthData = async () => {
+    if (!bleService) return;
+    
     try {
       setIsSyncing(true);
       setSyncProgress(0);
@@ -149,49 +153,97 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 </View>
                 <View style={styles.deviceTextContainer}>
                   <Text style={styles.welcomeText}>Xin chào,</Text>
-                  <Text style={styles.deviceNameText}>{device.name || "Smart Ring"}</Text>
+                  <Text style={styles.deviceNameText}>{device ? (device.name || "Smart Ring") : "Smart Ring"}</Text>
                 </View>
               </View>
 
               <View style={styles.headerActionsContainer}>
-                <TouchableOpacity 
-                  style={styles.headerActionButton}
-                  onPress={syncHealthData}
-                >
-                  <Animated.View style={{
-                    transform: [{ rotate: rotateInterpolate }],
-                    opacity: isSyncing ? 1 : 0.8
-                  }}>
-                    <MaterialCommunityIcons name={"sync" as any} size={22} color="#FFF" />
-                  </Animated.View>
-                </TouchableOpacity>
+                {device && bleService ? (
+                  <>
+                    <TouchableOpacity 
+                      style={styles.headerActionButton}
+                      onPress={syncHealthData}
+                    >
+                      <Animated.View style={{
+                        transform: [{ rotate: rotateInterpolate }],
+                        opacity: isSyncing ? 1 : 0.8
+                      }}>
+                        <MaterialCommunityIcons name={"sync" as any} size={22} color="#FFF" />
+                      </Animated.View>
+                    </TouchableOpacity>
 
-                <TouchableOpacity 
-                  style={[styles.headerActionButton, styles.disconnectButton]}
-                  onPress={onDisconnect}
-                >
-                  <MaterialCommunityIcons name={"bluetooth-off" as any} size={22} color="#FFF" />
-                </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.headerActionButton, styles.disconnectButton]}
+                      onPress={onDisconnect}
+                    >
+                      <MaterialCommunityIcons name={"bluetooth-off" as any} size={22} color="#FFF" />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.headerActionButton}
+                    onPress={onConnect}
+                  >
+                    <MaterialCommunityIcons name={"bluetooth-connect" as any} size={22} color="#FFF" />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
 
             <View style={styles.connectionStatusBar}>
               <View style={styles.connectionStatusIndicator}>
-                <View style={styles.pulsingDot}>
-                  <Animated.View 
-                    style={[
-                      styles.pulsingDotInner,
-                      { transform: [{ scale: pulseAnim }] }
-                    ]}
-                  />
-                </View>
-                <Text style={styles.connectionStatusText}>Đã kết nối và hoạt động tốt</Text>
+                {device ? (
+                  <>
+                    <View style={styles.pulsingDot}>
+                      <Animated.View 
+                        style={[
+                          styles.pulsingDotInner,
+                          { transform: [{ scale: pulseAnim }] }
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.connectionStatusText}>Đã kết nối và hoạt động tốt</Text>
+                  </>
+                ) : (
+                  <>
+                    <View style={[styles.pulsingDot, styles.disconnectedDot]}>
+                      <View style={[styles.pulsingDotInner, styles.disconnectedDotInner]} />
+                    </View>
+                    <Text style={styles.disconnectedStatusText}>Chưa kết nối thiết bị</Text>
+                  </>
+                )}
               </View>
-              <Text style={styles.batteryStatusText}>Pin: 85%</Text>
+              {device && <Text style={styles.batteryStatusText}>Pin: 85%</Text>}
             </View>
           </View>
         </View>
-        <View style={styles.sleepSummaryCard}>
+        {!device ? (
+          <View style={styles.connectDeviceCard}>
+            <MaterialCommunityIcons name="bluetooth-off" size={60} color="#91D5FF" style={styles.connectIcon} />
+            
+            <Text style={styles.connectTitle}>Chưa có thiết bị nào được kết nối</Text>
+            <Text style={styles.connectDescription}>
+              Kết nối với SmartRing của bạn để theo dõi sức khỏe và giấc ngủ
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.connectButton} 
+              onPress={() => {
+                console.log('Nút kết nối trong HomeScreen được bấm');
+                console.log('onConnect có tồn tại:', !!onConnect);
+                // Gọi hàm onConnect trực tiếp nếu nó tồn tại
+                if (onConnect) {
+                  onConnect();
+                }
+              }}
+            >
+              <MaterialCommunityIcons name="bluetooth-connect" size={24} color="white" />
+              <Text style={styles.connectButtonText}>Kết nối thiết bị</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <View style={styles.sleepSummaryCard}>
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleContainer}>
               <MaterialCommunityIcons name={"sleep" as any} size={22} color="#6979F8" />
@@ -290,8 +342,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <Text style={styles.legendText}>Thức</Text>
             </View>
           </View>
-        </View>
-        <View style={styles.healthSummaryHeader}>
+            </View>
+
+            <View style={styles.healthSummaryHeader}>
           <View style={styles.healthSummaryTitleContainer}>
             <MaterialCommunityIcons name="heart-pulse" size={22} color="#FB6F92" style={styles.healthSummaryIcon} />
             <Text style={styles.healthSummaryTitle}>Tổng quan sức khỏe</Text>
@@ -555,11 +608,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 )}
               </View>
             </View>
-          </TouchableOpacity>
-        </View>
-    
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </ScrollView>
-      
       <Modal
         visible={isSyncing}
         transparent={true}
@@ -748,15 +801,75 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#52C41A',
   },
+  disconnectedDot: {
+    backgroundColor: 'rgba(245, 34, 45, 0.15)',
+  },
+  disconnectedDotInner: {
+    backgroundColor: '#F5222D',
+    transform: [{ scale: 1 }],
+  },
   connectionStatusText: {
     fontSize: 14,
     fontWeight: '500',
     color: '#52C41A',
   },
+  disconnectedStatusText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#F5222D',
+  },
   batteryStatusText: {
     fontSize: 14,
     fontWeight: '500',
     color: '#666',
+  },
+  connectDeviceCard: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  connectIcon: {
+    marginBottom: 16,
+  },
+  connectTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  connectDescription: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  connectButton: {
+    flexDirection: 'row',
+    backgroundColor: '#40A9FF',
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 25,
+    elevation: 3,
+    shadowColor: '#40A9FF',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    alignItems: 'center',
+  },
+  connectButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 10,
   },
   healthSummaryHeader: {
     flexDirection: 'row',

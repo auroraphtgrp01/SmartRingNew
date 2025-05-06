@@ -21,7 +21,9 @@ const CustomModal: React.FC<CustomModalProps> = ({ visible, onClose, children })
   const [backdropAnimation] = React.useState(new Animated.Value(0));
 
   React.useEffect(() => {
+    console.log('CustomModal visible thay đổi:', visible);
     if (visible) {
+      console.log('Hiển thị modal');
       // Hiển thị modal
       Animated.parallel([
         Animated.timing(backdropAnimation, {

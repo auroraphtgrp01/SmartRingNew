@@ -23,6 +23,7 @@ const DeviceScanner: React.FC<DeviceScannerProps> = ({
   onBack,
   onDisconnectDevice
 }) => {
+  console.log('DeviceScanner được render với', devices.length, 'thiết bị');
   return (
     <View style={styles.container}>
       <View style={styles.header}>

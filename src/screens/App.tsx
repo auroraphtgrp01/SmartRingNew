@@ -4,7 +4,7 @@ import { Device } from 'react-native-ble-plx';
 import BleService from '../core/BleService';
 
 // Import các component mới
-import EmptyState from '../components/EmptyState';
+// import EmptyState from '../components/EmptyState';
 import DeviceScanner from '../components/DeviceScanner';
 import HomeScreen from '../components/HomeScreen';
 import HeartRateScreen from './HeartRate';
@@ -45,6 +45,12 @@ export default function App() {
       subscription.remove();
     };
   }, []);
+
+  // Xử lý sự kiện khi bấm nút "Kết nối thiết bị"
+  const handleConnectButtonPress = () => {
+    console.log('Xử lý sự kiện kết nối thiết bị');
+    setShowScanner(true);
+  };
 
   // Hàm xử lý thay đổi trạng thái ứng dụng
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
@@ -287,16 +293,25 @@ export default function App() {
 <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
       <View style={styles.container}>
-        {connectedDevice ? (
-          renderConnectedScreens()
-        ) : (
-          <EmptyState onConnect={() => setShowScanner(true)} />
-        )}
+        <HomeScreen
+          device={connectedDevice}
+          onNavigateToHeartRate={navigateToHeartRate}
+          onNavigateToSpO2={navigateToSpO2}
+          onNavigateToSleepStats={navigateToSleepStats}
+          onNavigateToHealthStats={navigateToHealthStats}
+          onDisconnect={disconnectFromDevice}
+          bleService={connectedDevice ? bleService : null}
+          onConnect={handleConnectButtonPress}
+        />
       </View>
       
+      {/* Modal để hiển thị DeviceScanner */}
       <CustomModal
         visible={showScanner}
-        onClose={() => setShowScanner(false)}
+        onClose={() => {
+          console.log('Đóng CustomModal');
+          setShowScanner(false);
+        }}
       >
         <DeviceScanner
           isScanning={isScanning}
@@ -314,7 +329,7 @@ export default function App() {
   );
   
   // Render màn hình khi đã kết nối
-  function renderConnectedScreens() {
+  const renderConnectedScreens = () => {
     switch (currentScreen) {
       case AppScreen.HEART_RATE:
         return <HeartRateScreen onBack={navigateToHome} />;
