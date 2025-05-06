@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -15,6 +15,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Device } from 'react-native-ble-plx';
 import BleService from '../core/BleService';
+import { useBloodPressureHistory, useComprehensiveHistory, useHeartHistory, useSleepHistory, useSportHistory } from '../contexts';
 
 interface HomeScreenProps {
   device: Device;
@@ -39,6 +40,12 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [syncProgress, setSyncProgress] = React.useState(0);
   const [currentService, setCurrentService] = React.useState('');
   
+  const {sleepHistoryData} = useSleepHistory()
+  const {bloodPressureHistoryData} = useBloodPressureHistory()
+  const {heartHistoryData} = useHeartHistory()
+  const {sportHistoryData} = useSportHistory()
+  const {comprehensiveHistoryData} = useComprehensiveHistory()
+
   // Animation cho hiệu ứng pulse
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
   
@@ -169,8 +176,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <MaterialCommunityIcons name={"heart-pulse" as any} size={20} color="#FB6F92" />
               <Text style={styles.quickStatTitle}>Nhịp tim</Text>
             </View>
-            <Text style={styles.quickStatValue}>72 <Text style={styles.quickStatUnit}>BPM</Text></Text>
-            <Text style={styles.quickStatLabel}>Bình thường</Text>
+            <Text style={styles.quickStatValue}>
+              {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 
+                ? heartHistoryData.data[heartHistoryData.data.length - 1].heartValue 
+                : '---'} <Text style={styles.quickStatUnit}>BPM</Text>
+            </Text>
+            <Text style={styles.quickStatLabel}>
+              {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 
+                ? (() => {
+                    const heartRate = heartHistoryData.data[heartHistoryData.data.length - 1].heartValue;
+                    if (heartRate >= 60 && heartRate <= 100) return 'Bình thường';
+                    else if (heartRate < 60) return 'Thấp';
+                    else return 'Cao';
+                  })()
+                : 'N/A'}
+            </Text>
           </View>
           
           <View style={[styles.quickStatCard, { backgroundColor: '#F6FFED' }]}>
@@ -178,8 +198,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <MaterialCommunityIcons name={"water-percent" as any} size={20} color="#95DE64" />
               <Text style={styles.quickStatTitle}>SpO2</Text>
             </View>
-            <Text style={styles.quickStatValue}>98 <Text style={styles.quickStatUnit}>%</Text></Text>
-            <Text style={styles.quickStatLabel}>Tốt</Text>
+            <Text style={styles.quickStatValue}>
+              {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 
+                ? comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue 
+                : '---'} <Text style={styles.quickStatUnit}>%</Text>
+            </Text>
+            <Text style={styles.quickStatLabel}>
+              {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 
+                ? (() => {
+                    const spo2 = comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue;
+                    if (spo2 >= 95) return 'Tốt';
+                    else if (spo2 >= 90) return 'Bình thường';
+                    else return 'Thấp';
+                  })()
+                : 'N/A'}
+            </Text>
           </View>
           
           <View style={[styles.quickStatCard, { backgroundColor: '#E6F7FF' }]}>
@@ -187,8 +220,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <MaterialCommunityIcons name={"shoe-print" as any} size={20} color="#40A9FF" />
               <Text style={styles.quickStatTitle}>Bước chân</Text>
             </View>
-            <Text style={styles.quickStatValue}>8,243</Text>
-            <Text style={styles.quickStatLabel}>82% mục tiêu</Text>
+            <Text style={styles.quickStatValue}>
+              {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 
+                ? sportHistoryData.data[sportHistoryData.data.length - 1].sportStep.toLocaleString('vi-VN')
+                : '---'}
+            </Text>
+            <Text style={styles.quickStatLabel}>
+              {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 
+                ? `${Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}% mục tiêu`
+                : 'N/A'}
+            </Text>
           </View>
         </View>
         <View style={styles.featuresGrid}>
@@ -245,18 +286,73 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           </View>
 
           <View style={styles.sleepTimeContainer}>
-            <Text style={styles.sleepTime}>7 giờ 30 phút</Text>
+            <Text style={styles.sleepTime}>
+              {sleepHistoryData && sleepHistoryData.overview 
+                ? (() => {
+                    const totalMinutes = sleepHistoryData.overview.totalSleepTime;
+                    const hours = Math.floor(totalMinutes / 60);
+                    const minutes = Math.round(totalMinutes % 60);
+                    return `${hours} giờ ${minutes} phút`;
+                  })()
+                : '--- giờ --- phút'}
+            </Text>
             <View style={styles.sleepQuality}>
               <View style={styles.qualityDot} />
-              <Text style={styles.qualityText}>Tốt</Text>
+              <Text style={styles.qualityText}>
+                {sleepHistoryData && sleepHistoryData.overview 
+                  ? (() => {
+                      const totalMinutes = sleepHistoryData.overview.totalSleepTime;
+                      if (totalMinutes >= 420) return 'Tốt';
+                      else if (totalMinutes >= 360) return 'Bình thường';
+                      else return 'Kém';
+                    })()
+                  : 'N/A'}
+              </Text>
             </View>
           </View>
 
           <View style={styles.sleepStagesBar}>
-            <View style={[styles.sleepStage, { flex: 2.8, backgroundColor: '#36CFC9' }]} />
-            <View style={[styles.sleepStage, { flex: 1.3, backgroundColor: '#6979F8' }]} />
-            <View style={[styles.sleepStage, { flex: 0.7, backgroundColor: '#FFB980' }]} />
-            <View style={[styles.sleepStage, { flex: 0.2, backgroundColor: '#D9D9D9' }]} />
+            {sleepHistoryData && sleepHistoryData.overview 
+              ? (() => {
+                  const lightSleepFlex = sleepHistoryData.overview.totalLightSleep || 0;
+                  const deepSleepFlex = sleepHistoryData.overview.totalDeepSleep || 0;
+                  const remSleepFlex = sleepHistoryData.overview.totalREM || 0;
+                  const awakeFlex = sleepHistoryData.overview.wakeupCount || 0;
+                  
+                  // Đảm bảo có ít nhất một giá trị để hiển thị
+                  const totalFlex = lightSleepFlex + deepSleepFlex + remSleepFlex + awakeFlex;
+                  
+                  return (
+                    <>
+                      {totalFlex > 0 ? (
+                        <>
+                          <View style={[styles.sleepStage, { 
+                            flex: lightSleepFlex > 0 ? lightSleepFlex : 0.1, 
+                            backgroundColor: '#36CFC9' 
+                          }]} />
+                          <View style={[styles.sleepStage, { 
+                            flex: deepSleepFlex > 0 ? deepSleepFlex : 0.1, 
+                            backgroundColor: '#6979F8' 
+                          }]} />
+                          <View style={[styles.sleepStage, { 
+                            flex: remSleepFlex > 0 ? remSleepFlex : 0.1, 
+                            backgroundColor: '#FFB980' 
+                          }]} />
+                          <View style={[styles.sleepStage, { 
+                            flex: awakeFlex > 0 ? awakeFlex : 0.1, 
+                            backgroundColor: '#D9D9D9' 
+                          }]} />
+                        </>
+                      ) : (
+                        <>
+                          <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
+                        </>
+                      )}
+                    </>
+                  );
+                })()
+              : <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
+            }
           </View>
           
           <View style={styles.sleepLegend}>

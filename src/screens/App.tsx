@@ -12,6 +12,8 @@ import SpO2Screen from './SpO2';
 import SleepStatsScreen from './SleepStats';
 import HealthStatsScreen from './HealthStats';
 import CustomModal from '../components/CustomModal';
+import { HealthDataProvider } from '../contexts/HealthDataProvider';
+import { ContextConnector } from '../services/SyncHealthDataIntoCloud';
 
 // Enum cho các màn hình
 enum AppScreen {
@@ -280,7 +282,9 @@ export default function App() {
 
   
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <HealthDataProvider>
+<ContextConnector />
+<SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
       <View style={styles.container}>
         {connectedDevice ? (
@@ -305,6 +309,8 @@ export default function App() {
         />
       </CustomModal>
     </SafeAreaView>
+    </HealthDataProvider>
+    
   );
   
   // Render màn hình khi đã kết nối
