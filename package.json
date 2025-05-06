@@ -10,6 +10,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo/vector-icons": "^14.1.0",
     "base64-js": "^1.5.1",
     "expo": "~52.0.42",
     "expo-status-bar": "~2.0.1",

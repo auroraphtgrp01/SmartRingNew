@@ -169,3 +169,8 @@ alwaysApply: true
   - Prioritize performance vs. freshness according to specific requirements
 
   - Handle offline mode elegantly
+
+
+
+
+  Please edit the file in small chunks
