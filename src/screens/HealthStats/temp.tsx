@@ -263,6 +263,12 @@ const HealthStatsScreen: React.FC<HealthStatsScreenProps> = ({ onBack }) => {
               <Text style={styles.goalText}>{healthStats.calories.percentage}% mục tiêu hàng ngày</Text>
             </View>
           </View>
+
+          {/* Nút đồng bộ */}
+          <TouchableOpacity style={styles.syncButton}>
+            <MaterialCommunityIcons name="sync" size={22} color="white" />
+            <Text style={styles.syncButtonText}>Đồng bộ dữ liệu sức khỏe</Text>
+          </TouchableOpacity>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -362,7 +368,6 @@ const styles = StyleSheet.create({
   },
   caloriesCard: {
     borderLeftWidth: 4,
-    marginBottom: 50,
     borderLeftColor: '#FF7A45',
   },
   statsHeader: {
