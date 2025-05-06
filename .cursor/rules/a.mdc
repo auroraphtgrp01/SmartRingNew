@@ -1,0 +1,171 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Comprehensive Rules
+
+## 1. Communication Principles
+- **Use Vietnamese in all situations:**
+  - All answers, explanations, analyses must be written in Vietnamese
+  - Comments in code should also use Vietnamese for better understanding
+  - Use clear wording, avoid mechanical translation from English to Vietnamese
+  - For technical terms without Vietnamese equivalents, the original term can be kept with a brief explanation if needed
+
+## 2. Analysis Process
+- **Comprehensive approach:**
+  - Always thoroughly analyze all aspects of the problem before providing solutions
+  - Clearly identify functional and non-functional requirements
+  - Evaluate alternative solutions before deciding
+  - Consider the impact of solutions on performance, security, and user experience
+- **Research methodology:**
+  - Study the existing codebase thoroughly to understand structure and logic
+  - Analyze in detail the properties, data relationships, and related business logic
+  - Look for design patterns being applied in the project
+  - Review libraries and frameworks being used to ensure consistency
+
+## 3. Principles for Respecting Existing Code
+- **Maintain consistency:**
+  - Do not delete or change code without clear instructions
+  - Maintain the current coding style of the project
+  - Follow established naming conventions and structures
+  - Do not change existing logic or processing flow unless specifically requested
+- **Dependencies management:**
+  - Do not arbitrarily add new libraries unless absolutely necessary
+  - Prioritize using libraries already present in the project
+  - When new dependencies are needed, propose and explain the reasons
+  - Always check and fix all errors in linter and data type after code generation to ensure the code is error-free.
+
+## 4. UI/UX Design
+- **Modern design philosophy:**
+  - Create intuitive, easy-to-use, user-friendly interfaces
+  - Ensure consistency throughout the application
+  - Prioritize minimalist design while maintaining full functionality
+  - Follow Material Design principles or other applied design principles
+
+- **Color palette and aesthetics:**
+  - Prioritize harmonious, gentle color schemes such as:
+    - Rose (#FFC2D1, #FFB3C6, #FF8FAB, #FB6F92)
+    - Green (#D9F7BE, #B7EB8F, #95DE64, #73D13D)
+    - Blue (#BAE7FF, #91D5FF, #69C0FF, #40A9FF)
+    - Zinc (#F2F2F2, #E5E5E5, #D4D4D4, #A3A3A3)
+    - Light Yellow (#FFF1B8, #FFE58F, #FFDC5C, #FFCF33)
+    - Amber (#FFF7CD, #FFE999, #FFD666, #FFC53D)
+    - Cyan (#B5F5EC, #87E8DE, #5CDBD3, #36CFC9)
+  - Use appropriate contrast to ensure readability
+  - Apply shadow effects and depth subtly
+  - Avoid using overly bright or flashy colors
+
+- **UI Components:**
+  - Use light, rounded badges for items in flatlist
+  - Prioritize buttons with moderate rounded corners and ripple effects when pressed
+  - Use simple, easy-to-understand, and consistent icons
+  - Apply appropriate white space to create an airy feel
+  - Ensure UI elements are large enough for easy interaction on touch devices
+
+- **Responsive and adaptive:**
+  - Design UI capable of adapting to different screen sizes
+  - Ensure consistent user experience on both phones and tablets
+  - Use relative units (%, dp, sp) rather than fixed units
+
+## 5. API Integration and Management
+- **API service architecture:**
+  - Create and maintain separate API services for each function or module
+  - Apply appropriate design patterns (Repository, Factory, Singleton, etc.)
+  - Structure code by layers: Service, Repository, Model
+  - Clear separation between data processing logic and display logic
+
+- **Request and response handling:**
+  - Handle all states thoroughly: loading, success, error, empty
+  - Apply appropriate retry mechanisms for unstable requests
+  - Implement reasonable data caching to minimize the number of requests
+  - Ensure elegant error handling and notify users when necessary
+
+- **Security and performance:**
+  - Follow security principles when working with APIs
+  - Optimize payload size to improve performance
+  - Use authentication methods that comply with backend requirements
+  - Implement cancellation tokens for requests that are no longer needed
+
+## 6. State Management and Data Flow
+- **Effective state management:**
+  - Use state management solutions appropriate for the project (Redux, MobX, Context API, etc.)
+  - Avoid storing duplicate states
+  - Normalize data for easy access and updates
+  - Apply immutable models when necessary to avoid side effects
+
+- **Render optimization:**
+  - Use memoization to avoid unnecessary renders
+  - Apply hooks like useMemo, useCallback appropriately
+  - Break down components to minimize unnecessary re-renders
+  - Use react-window or recyclerlistview for long lists
+
+## 7. Knowledge Management and Documentation
+- **Research documentation system:**
+  - Create and maintain markdown files in the docs/ directory
+  - Categorize documentation by function or module
+  - Use clear, descriptive file names (e.g., authentication-flow.md, data-caching-strategy.md)
+  - Use clear structure with sections and subsections marked by heading levels
+
+- **Research documentation content:**
+  - Clearly describe the problem or technical challenge
+  - List considered solutions along with their pros and cons
+  - Explain in detail the chosen solution and the reasons
+  - Include sample code snippets or illustrative diagrams when necessary
+  - List references or related documents
+
+- **Documentation updates and maintenance:**
+  - Update documentation when changes occur in solutions or approaches
+  - Clearly note creation and update dates
+  - Version documents if necessary
+  - Ensure searchability by using appropriate keywords
+
+## 8. Quality Assurance Principles
+- **Code quality:**
+  - Follow SOLID, DRY, and KISS principles
+  - Handle edge cases thoroughly
+  - Avoid "magic numbers" and "magic strings"
+  - Use comments appropriately to explain complex logic
+  - Ensure code is readable and maintainable
+
+## 9. Performance Optimization
+- **Application performance:**
+  - Optimize application startup time
+  - Minimize resource usage (CPU, RAM)
+  - Optimize animations and transitions
+  - Implement lazy loading for components not immediately needed
+
+- **Bundle size optimization:**
+  - Use tree shaking when importing libraries
+  - Avoid importing entire large libraries when only a few components are needed
+  - Split code by route or feature when necessary
+  - Use dynamic imports for infrequently used features
+
+## 10. Code Review Guidelines
+- **Evaluation criteria:**
+  - Correctness: Does the code fulfill the requirements correctly?
+  - Efficiency: Is it optimized for performance and resources?
+  - Maintainability: Is the code readable and easy to maintain?
+  - Consistency: Does the code follow the current style and structure?
+  - Extensibility: Is the code easily expandable in the future?
+
+- **Review process:**
+  - Understand the requirements and purpose of the code
+  - Review each file systematically
+  - Provide specific and constructive feedback
+  - Suggest improvements when necessary
+  - Distinguish clearly between serious issues and minor suggestions
+
+## 11. Local Data Handling
+- **Local storage:**
+  - Use AsyncStorage, SecureStore, SQLite, or Realm according to requirements
+  - Encrypt sensitive data
+  - Apply data synchronization mechanisms when necessary
+  - Efficiently handle large data sets
+
+- **Cache memory management:**
+  - Establish appropriate caching strategies
+  - Apply invalidation and expiration mechanisms for cached data
+  - Prioritize performance vs. freshness according to specific requirements
+
+  - Handle offline mode elegantly
