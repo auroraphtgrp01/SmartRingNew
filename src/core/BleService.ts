@@ -5,6 +5,7 @@ import { PermissionsAndroid } from 'react-native';
 import { ByteService } from './ByteService';
 import SleepService from '../services/SleepService';
 import SportService from '../services/SportService';
+import HeartHistoryService from '../services/HeartHistoryService';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -231,6 +232,14 @@ class BleService {
     return await SportService.getInstance().getSportData(this.device, callback);
   }
 
+  public async getHeartData(callback: (data: any[] | null) => void): Promise<boolean> {
+    if (!this.device || !this.isConnected) {
+      callback(null);
+      return false;
+    }
+    
+    return await HeartHistoryService.getInstance().getHeartData(this.device, callback);
+  }
 
 }
 
