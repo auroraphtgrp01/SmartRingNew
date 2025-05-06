@@ -273,3 +273,17 @@ export function unpackDeviceInfoData(bArr: Uint8Array): { [key: string]: any } {
 
     return result;
 }
+
+export function unpackSpo2Manual(arr: Uint8Array): number {
+    if (arr.length < 5) {
+        return 0;
+    }
+
+    const spo2 = arr[4];
+
+    if (spo2 > 80) {
+        return spo2;
+    }
+
+    return 0;
+}
