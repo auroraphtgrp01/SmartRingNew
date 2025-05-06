@@ -135,7 +135,6 @@ export function unpackHealthData(bArr: Uint8Array, i2: number): Record<string, a
                 index6++;
                 const heartValue = bArr[index6] & 0xFF;
                 index6++;
-                console.log(">>>>>>>>>>>>>>>>>>>>>>>", startTime)
                 heartData.push({
                     heartStartTime: decodeTimestamp(startTime),
                     heartValue: heartValue

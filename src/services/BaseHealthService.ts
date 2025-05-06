@@ -4,6 +4,7 @@ import { ByteService } from '../core/ByteService';
 import BleService from '../core/BleService';
 import { Constants } from '../constants';
 import { unpackHealthData } from '../core/UnpackData';
+import { FinalDataService } from './FinalDataService';
 
 export abstract class BaseHealthService<T> {
   protected dataPackets: Array<Buffer> = [];
@@ -51,8 +52,6 @@ export abstract class BaseHealthService<T> {
       const initCommand = Constants.COMMAND_BYTE.INIT_HEALTH_BLOCK;
       const finalInitCommand = ByteService.createCommandWithCRC(initCommand);
       
-      console.log('Gửi lệnh khởi tạo:', ByteService.bufferToHexString(finalInitCommand), `(Độ dài: ${finalInitCommand.length} bytes)`)
-      
       await device.writeCharacteristicWithResponseForService(
         Constants.UUID.SERVICE_UUID,
         Constants.UUID.COMMAND_CHARACTERISTIC_UUID,
@@ -89,16 +88,15 @@ export abstract class BaseHealthService<T> {
     
     this.dataTimeoutId = setTimeout(() => {
       if (isReceivingData && dataPackets.length > 0) {
-        console.log(">>>>>> dataType: ", this.dataType)
-        console.log(`Đã nhận ${dataPackets.length} gói dữ liệu ${logPrefix}, tiến hành ghép dữ liệu`);
+        // console.log(`Đã nhận ${dataPackets.length} gói dữ liệu ${logPrefix}, tiến hành ghép dữ liệu`);
         
         dataPackets.forEach((packet, index) => {
-          console.log(`Độ dài: ${packet.length} bytes`);
+          // console.log(`Độ dài: ${packet.length} bytes`);
         });
         
         const combinedData = Buffer.concat(dataPackets);
         const convertToUnit8 = new Uint8Array(combinedData);
-        console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
+        // console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
         onMerge(convertToUnit8);
         this.isReceivingData = false;
         this.handleUnpackData(convertToUnit8, this.dataType);
@@ -108,7 +106,32 @@ export abstract class BaseHealthService<T> {
 
   protected handleUnpackData(data: Uint8Array, dataType: number) {
     const unpackedData = unpackHealthData(data, dataType);
-    console.log('Dữ liệu giải nén:', unpackedData);
+    this.handleMappingData(unpackedData, dataType);
+  }
+
+  protected handleMappingData(data: Record<string, any>, dataType: number) {
+    switch (dataType) {
+      case Constants.DATA_TYPE.sleepHistory:
+        const finalSleepData = FinalDataService.getInstance().getFinalSleepData(data)
+        console.log('Dữ liệu giấc ngủ:', finalSleepData);
+        break;
+      case Constants.DATA_TYPE.sportHistory:
+        const finalSportData = FinalDataService.getInstance().getFinalSportData(data)
+        console.log('Dữ liệu thể thao:', finalSportData);
+        break;
+      case Constants.DATA_TYPE.heartHistory:
+        const finalHeartData = FinalDataService.getInstance().getFinalHeartData(data)
+        console.log('Dữ liệu nhịp tim:', finalHeartData);
+        break;
+      case Constants.DATA_TYPE.bloodPressureHistory:
+        const finalBloodPressureData = FinalDataService.getInstance().getFinalBloodPressureData(data)
+        console.log('Dữ liệu huyết áp:', finalBloodPressureData);
+        break;
+      case Constants.DATA_TYPE.comprehensiveMeasurement:
+        const finalComprehensiveData = FinalDataService.getInstance().getFinalComprehensiveMeasurementData(data)
+        console.log('Dữ liệu đo tổng hợp:', finalComprehensiveData);  
+        break;
+    }
   }
 }
 

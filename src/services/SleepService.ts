@@ -36,9 +36,6 @@ export class SleepService extends BaseHealthService<any[]> {
     
     // Giải mã giá trị nhận được từ Base64
     const buffer = Buffer.from(characteristic.value, 'base64');
-    
-    console.log(`Nhận dữ liệu từ ${characteristic.uuid}: ${ByteService.bufferToHexString(buffer)} (Độ dài: ${buffer.length} bytes)`);
-    
     // Kiểm tra CRC của gói dữ liệu
     if (!ByteService.verifyPacketCRC(buffer)) {
       console.error('CRC không hợp lệ! Bỏ qua gói dữ liệu');
@@ -49,7 +46,6 @@ export class SleepService extends BaseHealthService<any[]> {
     if (characteristic.uuid.toLowerCase() === Constants.UUID.COMMAND_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói thông tin giấc ngủ không (0x0504)
       if (buffer[0] === 0x05 && buffer[1] === 0x04) {
-        console.log('Nhận được gói thông tin giấc ngủ');
         this.isReceivingData = true;
         this.dataPackets = [];
       }
@@ -59,7 +55,6 @@ export class SleepService extends BaseHealthService<any[]> {
     else if (characteristic.uuid.toLowerCase() === Constants.UUID.DATA_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói dữ liệu giấc ngủ không (0x0513)
       if (buffer[0] === 0x05 && buffer[1] === 0x13 && this.isReceivingData) {
-        console.log('Nhận được gói dữ liệu giấc ngủ');
       
         // Lấy độ dài gói
         const length = (buffer[2] << 8) + buffer[3];

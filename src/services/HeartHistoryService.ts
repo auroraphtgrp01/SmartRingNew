@@ -36,8 +36,6 @@ export class HeartHistoryService extends BaseHealthService<any[]> {
     // Giải mã giá trị nhận được từ Base64
     const buffer = Buffer.from(characteristic.value, 'base64');
     
-    console.log(`Nhận dữ liệu từ ${characteristic.uuid}: ${ByteService.bufferToHexString(buffer)} (Độ dài: ${buffer.length} bytes)`);
-    
     // Kiểm tra CRC của gói dữ liệu
     if (!ByteService.verifyPacketCRC(buffer)) {
       console.error('CRC không hợp lệ! Bỏ qua gói dữ liệu');
@@ -48,7 +46,6 @@ export class HeartHistoryService extends BaseHealthService<any[]> {
     if (characteristic.uuid.toLowerCase() === Constants.UUID.COMMAND_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói thông tin nhịp tim không (0x0506)
       if (buffer[0] === 0x05 && buffer[1] === 0x06) {
-        console.log('Nhận được gói thông tin nhịp tim');
         this.isReceivingData = true;
         this.dataPackets = [];
       }

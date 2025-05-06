@@ -30,4 +30,12 @@ export class Constants {
     GET_BLOOD_PRESSURE_HISTORY: new Uint8Array([0x05, 0x08, 0x06, 0x00, 0x82, 0x3B]),
     GET_COMPREHENSIVE_MEASUREMENT: new Uint8Array([0x05, 0x09, 0x06, 0x00, 0xB2, 0x0C])
   }
+
+  static DATA_TYPE = {
+    sportHistory: 2,
+    sleepHistory: 4,
+    heartHistory: 6,
+    bloodPressureHistory: 8,
+    comprehensiveMeasurement: 9
+  }
 }

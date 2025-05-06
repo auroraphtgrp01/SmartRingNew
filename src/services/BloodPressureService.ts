@@ -36,8 +36,6 @@ export class BloodPressureService extends BaseHealthService<any[]> {
     // Giải mã giá trị nhận được từ Base64
     const buffer = Buffer.from(characteristic.value, 'base64');
     
-    console.log(`Nhận dữ liệu từ ${characteristic.uuid}: ${ByteService.bufferToHexString(buffer)} (Độ dài: ${buffer.length} bytes)`);
-    
     // Kiểm tra CRC của gói dữ liệu
     if (!ByteService.verifyPacketCRC(buffer)) {
       console.error('CRC không hợp lệ! Bỏ qua gói dữ liệu');
@@ -48,7 +46,6 @@ export class BloodPressureService extends BaseHealthService<any[]> {
     if (characteristic.uuid.toLowerCase() === Constants.UUID.COMMAND_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói thông tin huyết áp không (0x0508)
       if (buffer[0] === 0x05 && buffer[1] === 0x08) {
-        console.log('Nhận được gói thông tin huyết áp');
         this.isReceivingData = true;
         this.dataPackets = [];
       }
