@@ -212,9 +212,9 @@ export default function App() {
       await bleService.startSpo2((data) => {
         setIsFetchingSleepData(false);
         if (data) {
-          console.log('Dữ liệu nhịp tim:', data);
+          console.log('Dữ liệu spo2: >>>>>>', data);
         } else {
-          Alert.alert('Không có dữ liệu', 'Không nhận được dữ liệu nhịp tim từ thiết bị');
+          Alert.alert('Không có dữ liệu', 'Không nhận được dữ liệuspo2 từ thiết bị');
         }
       });
     } catch (error) {

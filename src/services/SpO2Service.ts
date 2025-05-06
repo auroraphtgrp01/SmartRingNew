@@ -24,6 +24,7 @@ export class SpO2Service {
     
     try {
       this.isMonitoring = true;
+      this.setCallback(callback);
       
       device.monitorCharacteristicForService(
         Constants.UUID.SERVICE_UUID,
@@ -79,6 +80,8 @@ export class SpO2Service {
       
       console.log('Đã gửi lệnh dừng đo SPO2');
       this.isMonitoring = false;
+      // Xóa callback khi dừng đo
+      this.callback = null;
       return true;
     } catch (error) {
       console.error('Lỗi khi gửi lệnh dừng đo SPO2:', error);
@@ -86,18 +89,25 @@ export class SpO2Service {
     }
   }
 
+  private callback: ((data: any | null) => void) | null = null;
+
+  public setCallback(callback: (data: any | null) => void): void {
+    this.callback = callback;
+  }
+
   private handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {
     if (error) {
       console.error('Lỗi khi nhận dữ liệu SPO2:', error);
+      if (this.callback) this.callback(null);
       return;
     }
-    
     if (!characteristic || !characteristic.value || !this.isMonitoring) return;
-    
     const buffer = Buffer.from(characteristic.value, 'base64');
     const convertToUint8Array = new Uint8Array(buffer);
     const spo2Value = unpackSpo2Manual(convertToUint8Array);
-    console.log(">>>", spo2Value);
+    if (this.callback && spo2Value) {
+      this.callback(spo2Value);
+    }
   }
 }
 
