@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.codevjp001.SmartRingRN2'
+    namespace 'com.yourcompany.smartringrn2'
     defaultConfig {
-        applicationId 'com.codevjp001.SmartRingRN2'
+        applicationId 'com.yourcompany.smartringrn2'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,4 +1,4 @@
-package com.codevjp001.SmartRingRN2
+package com.yourcompany.smartringrn2
 
 import android.app.Application
 import android.content.res.Configuration
