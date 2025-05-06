@@ -287,3 +287,17 @@ export function unpackSpo2Manual(arr: Uint8Array): number {
 
     return 0;
 }
+
+export function unpackHeartRateManual(data: Uint8Array): number {
+    if (data.length < 5) {
+        return 0;
+    }
+
+    const heartRate = data[4];
+
+    if (heartRate >= 40 && heartRate <= 200) {
+        return heartRate;
+    }
+
+    return 0;
+}

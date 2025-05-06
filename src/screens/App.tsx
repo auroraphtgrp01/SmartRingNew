@@ -224,6 +224,30 @@ export default function App() {
     }
   };
 
+  const startHeartRate = async () => {
+    if (!connectedDevice) {
+      Alert.alert('Lỗi', 'Vui lòng kết nối với thiết bị trước');
+      return;
+    }
+
+    setIsFetchingSleepData(true);
+
+    try {
+      await bleService.startHeartRate((data) => {
+        setIsFetchingSleepData(false);
+        if (data) {
+          console.log('Dữ liệu heart: >>>>>>', data);
+        } else {
+          Alert.alert('Không có dữ liệu', 'Không nhận được dữ liệuspo2 từ thiết bị');
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu thể thao:', error);
+      setIsFetchingSleepData(false);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi lấy dữ liệu thể thao');
+    }
+  };
+
   const getDeviceInfo =async () => {
     if (!connectedDevice) {
       Alert.alert('Lỗi', 'Vui lòng kết nối với thiết bị trước');
@@ -272,31 +296,6 @@ export default function App() {
     }
   };
 
-
-  // Hàm định dạng thời gian
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-  };
-
-  // Hàm định dạng thời gian phút thành giờ:phút
-  const formatMinutes = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  // Hiển thị loại giấc ngủ
-  const getSleepTypeName = (sleepType: number) => {
-    switch (sleepType) {
-      case 241: return 'Ngủ sâu';
-      case 242: return 'Ngủ nhẹ';
-      case 243: return 'REM';
-      case 244: return 'Thức giấc';
-      default: return 'Không xác định';
-    }
-  };
-
   // Hiển thị danh sách thiết bị
   const renderDeviceItem = ({ item }: { item: Device }) => (
     <TouchableOpacity
@@ -319,6 +318,13 @@ export default function App() {
           <Text style={styles.sectionTitle}>Thiết bị đã kết nối</Text>
           <Text style={styles.deviceName}>{connectedDevice.name}</Text>
           <Text style={styles.deviceId}>ID: {connectedDevice.id}</Text>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={startHeartRate}
+          >
+            <Text style={styles.buttonText}>Đo nhịp tim</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.button} 
