@@ -213,13 +213,14 @@ export class HealthSyncService {
         onProgress(100, 'Hoàn tất', 0);
       }
       
-      if (onComplete) {
-        onComplete();
-      }
+     
       
       const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
-      syncDataInstance.startSync();
-      
+      syncDataInstance.startSync(() => {
+        if(onComplete){
+          onComplete();
+        }
+      });
       return true;
     } catch (error) {
       console.error('Lỗi khi đồng bộ dữ liệu sức khỏe:', error);

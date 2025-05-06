@@ -36,12 +36,17 @@ export class SyncHealthDataIntoCloud {
         }
     }
 
-    public startSync() {
+    public startSync(callback: () => void) {
         console.log('Bắt đầu đồng bộ dữ liệu vào cloud');
         console.log('Dữ liệu thể thao:', SyncHealthDataIntoCloud.sportHistoryData);
         console.log('Dữ liệu giấc ngủ:', SyncHealthDataIntoCloud.sleepHistoryData);
         console.log('Dữ liệu nhịp tim:', SyncHealthDataIntoCloud.heartHistoryData);
         console.log('Dữ liệu huyết áp:', SyncHealthDataIntoCloud.bloodPressureHistoryData);
         console.log('Dữ liệu đo tổng hợp:', SyncHealthDataIntoCloud.comprehensiveMeasurementData);
+
+        // Sử dụng setTimeout để đảm bảo tất cả các log đã được xử lý trước khi gọi callback
+        setTimeout(() => {
+            callback();
+        }, 0);
     }
 }

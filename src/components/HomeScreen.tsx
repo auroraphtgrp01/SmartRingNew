@@ -6,10 +6,15 @@ import {
   ScrollView, 
   TouchableOpacity, 
   Image, 
-  SafeAreaView 
+  SafeAreaView,
+  Modal,
+  Animated,
+  Easing,
+  Dimensions
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Device } from 'react-native-ble-plx';
+import BleService from '../core/BleService';
 
 interface HomeScreenProps {
   device: Device;
@@ -18,6 +23,7 @@ interface HomeScreenProps {
   onNavigateToSleepStats: () => void;
   onNavigateToHealthStats: () => void;
   onDisconnect: () => void;
+  bleService: BleService;
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ 
@@ -26,8 +32,100 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onNavigateToSpO2, 
   onNavigateToSleepStats, 
   onNavigateToHealthStats, 
-  onDisconnect 
+  onDisconnect,
+  bleService
 }) => {
+  const [isSyncing, setIsSyncing] = React.useState(false);
+  const [syncProgress, setSyncProgress] = React.useState(0);
+  const [currentService, setCurrentService] = React.useState('');
+  
+  // Animation cho hiệu ứng pulse
+  const pulseAnim = React.useRef(new Animated.Value(1)).current;
+  
+  // Animation cho hiệu ứng rotate
+  const rotateAnim = React.useRef(new Animated.Value(0)).current;
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+  
+  // Bắt đầu animation khi đang đồng bộ
+  React.useEffect(() => {
+    if (isSyncing) {
+      // Hiệu ứng pulse
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.2,
+            duration: 800,
+            easing: Easing.ease,
+            useNativeDriver: true
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 800,
+            easing: Easing.ease,
+            useNativeDriver: true
+          })
+        ])
+      ).start();
+      
+      // Hiệu ứng quay
+      Animated.loop(
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.linear,
+          useNativeDriver: true
+        })
+      ).start();
+    } else {
+      // Dừng animation khi không đồng bộ nữa
+      pulseAnim.stopAnimation();
+      rotateAnim.stopAnimation();
+      setSyncProgress(0);
+      setCurrentService('');
+    }
+  }, [isSyncing]);
+
+  const syncHealthData = async () => {
+    try {
+      setIsSyncing(true);
+      setSyncProgress(0);
+      setCurrentService('');
+      
+      await bleService.syncHealthData((progress, service) => {
+        console.log(`Đồng bộ dữ liệu: ${progress}% - ${service}`);
+        setSyncProgress(progress);
+        setCurrentService(service);
+      }, () => {
+        console.log('ok >>>>>>>')
+        setIsSyncing(false);
+      });
+    } catch (error) {
+      console.log(error);
+      setIsSyncing(false);
+    }
+  };
+
+  // Chuyển đổi tên service thành tiếng Việt
+  const getServiceName = (serviceName: string) => {
+    switch(serviceName) {
+      case 'sportHistory':
+        return 'Dữ liệu thể thao';
+      case 'sleepHistory':
+        return 'Dữ liệu giấc ngủ';
+      case 'heartHistory':
+        return 'Dữ liệu nhịp tim';
+      case 'bloodPressureHistory':
+        return 'Dữ liệu huyết áp';
+      case 'comprehensiveMeasurement':
+        return 'Dữ liệu đo tổng hợp';
+      default:
+        return serviceName;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -44,9 +142,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               </View>
             </View>
           </View>
-          <TouchableOpacity style={styles.disconnectButton} onPress={onDisconnect}>
-            <MaterialCommunityIcons name={"bluetooth-off" as any} size={20} color="#666" />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity style={styles.syncButton} onPress={syncHealthData}>
+              <MaterialCommunityIcons name={"sync" as any} size={20} color="#40A9FF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.disconnectButton} onPress={onDisconnect}>
+              <MaterialCommunityIcons name={"bluetooth-off" as any} size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.summary}>
@@ -177,9 +280,80 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         </View>
 
       </ScrollView>
+      
+      {/* Modal hiển thị khi đang đồng bộ dữ liệu */}
+      <Modal
+        visible={isSyncing}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.syncDialogContainer}>
+            <View style={styles.syncDialogHeader}>
+              <Animated.View 
+                style={{
+                  transform: [{ rotate: rotateInterpolate }]
+                }}
+              >
+                <MaterialCommunityIcons 
+                  name="sync" 
+                  size={28} 
+                  color="#40A9FF" 
+                />
+              </Animated.View>
+              <Text style={styles.syncDialogTitle}>Đang đồng bộ dữ liệu</Text>
+            </View>
+            
+            <View style={styles.syncServiceContainer}>
+              <Animated.View 
+                style={[styles.syncIconContainer, {
+                  transform: [{ scale: pulseAnim }]
+                }]}
+              >
+                {currentService === 'heartHistory' && (
+                  <MaterialCommunityIcons name="heart-pulse" size={24} color="#FB6F92" />
+                )}
+                {currentService === 'sleepHistory' && (
+                  <MaterialCommunityIcons name="sleep" size={24} color="#69C0FF" />
+                )}
+                {currentService === 'sportHistory' && (
+                  <MaterialCommunityIcons name="run" size={24} color="#95DE64" />
+                )}
+                {currentService === 'bloodPressureHistory' && (
+                  <MaterialCommunityIcons name="heart-pulse" size={24} color="#FF8FAB" />
+                )}
+                {currentService === 'comprehensiveMeasurement' && (
+                  <MaterialCommunityIcons name="clipboard-pulse" size={24} color="#FFCF33" />
+                )}
+                {!currentService && (
+                  <MaterialCommunityIcons name="sync" size={24} color="#40A9FF" />
+                )}
+              </Animated.View>
+              <Text style={styles.syncServiceName}>
+                {currentService ? getServiceName(currentService) : 'Chuẩn bị đồng bộ...'}
+              </Text>
+            </View>
+            
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarBackground}>
+                <View 
+                  style={[styles.progressBarFill, { width: `${syncProgress}%` }]} 
+                />
+              </View>
+              <Text style={styles.progressText}>{syncProgress}%</Text>
+            </View>
+            
+            <Text style={styles.syncMessage}>
+              Vui lòng không tắt ứng dụng hoặc ngắt kết nối thiết bị trong quá trình đồng bộ
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
+
+const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -229,6 +403,19 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 14,
     color: '#52C41A',
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  syncButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E6F7FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   disconnectButton: {
     width: 40,
@@ -418,6 +605,92 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: 12,
     color: '#666',
+  },
+  // Styles cho modal đồng bộ dữ liệu
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  syncDialogContainer: {
+    width: width * 0.85,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  syncDialogHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  syncDialogTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 12,
+  },
+  syncServiceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: '#F9F9F9',
+    padding: 16,
+    borderRadius: 12,
+    width: '100%',
+  },
+  syncIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  syncServiceName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+    flex: 1,
+  },
+  progressContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  progressBarBackground: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 4,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#40A9FF',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#40A9FF',
+    width: 40,
+    textAlign: 'right',
+  },
+  syncMessage: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 18,
   },
 });
 

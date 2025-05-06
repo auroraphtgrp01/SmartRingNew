@@ -278,22 +278,7 @@ export default function App() {
     }
   };
 
-  const syncHealthData = async () => {
-    if (!connectedDevice) return;
-    setIsFetchingData(true);
-    try {
-      await bleService.syncHealthData((progress, currentService) => {
-        console.log(`Đồng bộ dữ liệu: ${progress}% - ${currentService}`);
-        if (progress === 100) {
-          setIsFetchingData(false);
-        }
-      });
-    } catch (error) {
-      setIsFetchingData(false);
-      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi đồng bộ dữ liệu');
-    }
-  };
-
+  
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
@@ -316,6 +301,7 @@ export default function App() {
           onConnectDevice={connectToDevice}
           isConnecting={isConnecting}
           onBack={() => setShowScanner(false)}
+          onDisconnectDevice={disconnectFromDevice}
         />
       </CustomModal>
     </SafeAreaView>
@@ -342,6 +328,7 @@ export default function App() {
             onNavigateToSleepStats={navigateToSleepStats}
             onNavigateToHealthStats={navigateToHealthStats}
             onDisconnect={disconnectFromDevice}
+            bleService={bleService}
           />
         );
     }

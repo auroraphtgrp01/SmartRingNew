@@ -11,6 +11,7 @@ interface DeviceScannerProps {
   onConnectDevice: (device: Device) => void;
   isConnecting: boolean;
   onBack: () => void;
+  onDisconnectDevice: () => void;
 }
 
 const DeviceScanner: React.FC<DeviceScannerProps> = ({
@@ -19,7 +20,8 @@ const DeviceScanner: React.FC<DeviceScannerProps> = ({
   onStartScan,
   onConnectDevice,
   isConnecting,
-  onBack
+  onBack,
+  onDisconnectDevice
 }) => {
   return (
     <View style={styles.container}>
@@ -30,23 +32,36 @@ const DeviceScanner: React.FC<DeviceScannerProps> = ({
         <Text style={styles.title}>Tìm thiết bị</Text>
       </View>
 
-      <TouchableOpacity 
-        style={styles.scanButton} 
-        onPress={onStartScan}
-        disabled={isScanning}
-        activeOpacity={0.8}
-      >
-        {isScanning ? (
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={styles.scanButton} 
+          onPress={onStartScan}
+          disabled={isScanning}
+          activeOpacity={0.8}
+        >
+          {isScanning ? (
+            <View style={styles.scanningContent}>
+              <ActivityIndicator color="white" style={styles.spinner} />
+              <Text style={styles.buttonText}>Đang quét...</Text>
+            </View>
+          ) : (
+            <View style={styles.scanningContent}>
+              <Text style={styles.buttonText}>Quét thiết bị</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.clearButton} 
+          onPress={onDisconnectDevice}
+          activeOpacity={0.8}
+        >
           <View style={styles.scanningContent}>
-            <ActivityIndicator color="white" style={styles.spinner} />
-            <Text style={styles.buttonText}>Đang quét...</Text>
+            <MaterialCommunityIcons name="bluetooth-off" size={18} color="white" style={styles.buttonIcon} />
+            <Text style={styles.buttonText}>Clear Connect</Text>
           </View>
-        ) : (
-          <View style={styles.scanningContent}>
-            <Text style={styles.buttonText}>Quét thiết bị</Text>
-          </View>
-        )}
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.deviceListContainer}>
         {devices.length > 0 ? (
@@ -108,7 +123,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    gap: 10,
+  },
   scanButton: {
+    flex: 1,
     backgroundColor: '#40A9FF',
     borderRadius: 12,
     paddingVertical: 14,
@@ -119,7 +141,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 3,
-    marginBottom: 20,
+  },
+  clearButton: {
+    flex: 1,
+    backgroundColor: '#FB6F92',
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FB6F92',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
   scanningContent: {
     flexDirection: 'row',
