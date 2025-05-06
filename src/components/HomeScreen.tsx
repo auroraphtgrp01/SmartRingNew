@@ -659,11 +659,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 <MaterialCommunityIcons 
                   name={currentService === 'heartHistory' ? "heart-pulse" : 
                        currentService === 'sleepHistory' ? "sleep" : 
-                       currentService === 'sportHistory' ? "run" : 
-                       currentService === 'bloodPressureHistory' ? "heart-pulse" : 
-                       currentService === 'comprehensiveMeasurement' ? "clipboard-pulse" : 
-                       "sync"} 
-                  size={24} 
+                       currentService === 'sportHistory' ? "run-fast" : 
+                       currentService === 'bloodPressureHistory' ? "heart-flash" : 
+                       currentService === 'comprehensiveMeasurement' ? "clipboard-pulse-outline" : 
+                       "cloud-sync"} 
+                  size={28} 
                   color={currentService === 'heartHistory' ? "#FB6F92" : 
                          currentService === 'sleepHistory' ? "#69C0FF" : 
                          currentService === 'sportHistory' ? "#95DE64" : 
