@@ -118,6 +118,7 @@ export class HeartRateService {
     const heartRateValue = unpackHeartRateManual(convertToUint8Array)
     
     if (this.callback) {
+      console.log('Nhịp tim ở service', heartRateValue);
       this.callback(heartRateValue);
     }
   }

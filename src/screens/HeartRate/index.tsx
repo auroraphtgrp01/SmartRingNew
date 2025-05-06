@@ -9,7 +9,7 @@ interface HeartRateScreenProps {
 
 const HeartRateScreen: React.FC<HeartRateScreenProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [heartRate, setHeartRate] = useState<number>(72);
+  const [heartRate, setHeartRate] = useState<number>(0);
   const [status, setStatus] = useState<string>('Bình thường');
 
   const measureHeartRate = async () => {
@@ -18,13 +18,15 @@ const HeartRateScreen: React.FC<HeartRateScreenProps> = ({ onBack }) => {
     
     try {
       await bleService.startHeartRate((data) => {
+        console.log('Nhịp tim ở screen', data);
         setIsLoading(false);
-        if (data && data.heartRate) {
-          setHeartRate(data.heartRate);
+        if (data) {
+          setHeartRate(data);
+          console.log('Nhịp tim:', data);
           // Cập nhật trạng thái dựa trên nhịp tim
-          if (data.heartRate < 60) {
+          if (data < 60) {
             setStatus('Thấp');
-          } else if (data.heartRate > 100) {
+          } else if (data > 100) {
             setStatus('Cao');
           } else {
             setStatus('Bình thường');

@@ -43,7 +43,6 @@ const DeviceScanner: React.FC<DeviceScannerProps> = ({
           </View>
         ) : (
           <View style={styles.scanningContent}>
-            <MaterialCommunityIcons name={"bluetooth-search" as any} size={22} color="white" style={styles.buttonIcon} />
             <Text style={styles.buttonText}>Quét thiết bị</Text>
           </View>
         )}
