@@ -243,7 +243,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           </View>
         ) : (
           <>
-            <View style={styles.sleepSummaryCard}>
+            <TouchableOpacity 
+              style={styles.sleepSummaryCard}
+              onPress={onNavigateToSleepStats}
+            >
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleContainer}>
               <MaterialCommunityIcons name={"sleep" as any} size={22} color="#6979F8" />
@@ -254,111 +257,111 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.sleepTimeContainer}>
-            <Text style={styles.sleepTime}>
-              {sleepHistoryData && sleepHistoryData.overview 
-                ? (() => {
-                    const totalMinutes = sleepHistoryData.overview.totalSleepTime;
-                    const hours = Math.floor(totalMinutes / 60);
-                    const minutes = Math.round(totalMinutes % 60);
-                    return `${hours} giờ ${minutes} phút`;
-                  })()
-                : '--- giờ --- phút'}
-            </Text>
-            <View style={styles.sleepQuality}>
-              <View style={styles.qualityDot} />
-              <Text style={styles.qualityText}>
+              <View style={styles.sleepTimeContainer}>
+                <Text style={styles.sleepTime}>
+                  {sleepHistoryData && sleepHistoryData.overview 
+                    ? (() => {
+                        const totalMinutes = sleepHistoryData.overview.totalSleepTime;
+                        const hours = Math.floor(totalMinutes / 60);
+                        const minutes = Math.round(totalMinutes % 60);
+                        return `${hours} giờ ${minutes} phút`;
+                      })()
+                    : '--- giờ --- phút'}
+                </Text>
+                <View style={styles.sleepQuality}>
+                  <View style={styles.qualityDot} />
+                  <Text style={styles.qualityText}>
+                    {sleepHistoryData && sleepHistoryData.overview 
+                      ? (() => {
+                          const totalMinutes = sleepHistoryData.overview.totalSleepTime;
+                          if (totalMinutes >= 420) return 'Tốt';
+                          else if (totalMinutes >= 360) return 'Bình thường';
+                          else return 'Kém';
+                        })()
+                      : 'N/A'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.sleepStagesBar}>
                 {sleepHistoryData && sleepHistoryData.overview 
                   ? (() => {
-                      const totalMinutes = sleepHistoryData.overview.totalSleepTime;
-                      if (totalMinutes >= 420) return 'Tốt';
-                      else if (totalMinutes >= 360) return 'Bình thường';
-                      else return 'Kém';
+                      const lightSleepFlex = sleepHistoryData.overview.totalLightSleep || 0;
+                      const deepSleepFlex = sleepHistoryData.overview.totalDeepSleep || 0;
+                      const remSleepFlex = sleepHistoryData.overview.totalREM || 0;
+                      const awakeFlex = sleepHistoryData.overview.wakeupCount || 0;
+                      
+                      // Đảm bảo có ít nhất một giá trị để hiển thị
+                      const totalFlex = lightSleepFlex + deepSleepFlex + remSleepFlex + awakeFlex;
+                      
+                      return (
+                        <>
+                          {totalFlex > 0 ? (
+                            <>
+                              <View style={[styles.sleepStage, { 
+                                flex: lightSleepFlex > 0 ? lightSleepFlex : 0.1, 
+                                backgroundColor: '#36CFC9' 
+                              }]} />
+                              <View style={[styles.sleepStage, { 
+                                flex: deepSleepFlex > 0 ? deepSleepFlex : 0.1, 
+                                backgroundColor: '#6979F8' 
+                              }]} />
+                              <View style={[styles.sleepStage, { 
+                                flex: remSleepFlex > 0 ? remSleepFlex : 0.1, 
+                                backgroundColor: '#FFB980' 
+                              }]} />
+                              <View style={[styles.sleepStage, { 
+                                flex: awakeFlex > 0 ? awakeFlex : 0.1, 
+                                backgroundColor: '#D9D9D9' 
+                              }]} />
+                            </>
+                          ) : (
+                            <>
+                              <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
+                            </>
+                          )}
+                        </>
+                      );
                     })()
-                  : 'N/A'}
-              </Text>
-            </View>
-          </View>
+                  : <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
+                }
+              </View>
+              
+              <View style={styles.sleepLegend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#36CFC9' }]} />
+                  <Text style={styles.legendText}>Ngủ nhẹ</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#6979F8' }]} />
+                  <Text style={styles.legendText}>Ngủ sâu</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#FFB980' }]} />
+                  <Text style={styles.legendText}>REM</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#D9D9D9' }]} />
+                  <Text style={styles.legendText}>Thức</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
 
-          <View style={styles.sleepStagesBar}>
-            {sleepHistoryData && sleepHistoryData.overview 
-              ? (() => {
-                  const lightSleepFlex = sleepHistoryData.overview.totalLightSleep || 0;
-                  const deepSleepFlex = sleepHistoryData.overview.totalDeepSleep || 0;
-                  const remSleepFlex = sleepHistoryData.overview.totalREM || 0;
-                  const awakeFlex = sleepHistoryData.overview.wakeupCount || 0;
-                  
-                  // Đảm bảo có ít nhất một giá trị để hiển thị
-                  const totalFlex = lightSleepFlex + deepSleepFlex + remSleepFlex + awakeFlex;
-                  
-                  return (
-                    <>
-                      {totalFlex > 0 ? (
-                        <>
-                          <View style={[styles.sleepStage, { 
-                            flex: lightSleepFlex > 0 ? lightSleepFlex : 0.1, 
-                            backgroundColor: '#36CFC9' 
-                          }]} />
-                          <View style={[styles.sleepStage, { 
-                            flex: deepSleepFlex > 0 ? deepSleepFlex : 0.1, 
-                            backgroundColor: '#6979F8' 
-                          }]} />
-                          <View style={[styles.sleepStage, { 
-                            flex: remSleepFlex > 0 ? remSleepFlex : 0.1, 
-                            backgroundColor: '#FFB980' 
-                          }]} />
-                          <View style={[styles.sleepStage, { 
-                            flex: awakeFlex > 0 ? awakeFlex : 0.1, 
-                            backgroundColor: '#D9D9D9' 
-                          }]} />
-                        </>
-                      ) : (
-                        <>
-                          <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
-                        </>
-                      )}
-                    </>
-                  );
-                })()
-              : <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
-            }
-          </View>
-          
-          <View style={styles.sleepLegend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#36CFC9' }]} />
-              <Text style={styles.legendText}>Ngủ nhẹ</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#6979F8' }]} />
-              <Text style={styles.legendText}>Ngủ sâu</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#FFB980' }]} />
-              <Text style={styles.legendText}>REM</Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: '#D9D9D9' }]} />
-              <Text style={styles.legendText}>Thức</Text>
-            </View>
-          </View>
-            </View>
-
-            <View style={styles.healthSummaryHeader}>
-          <View style={styles.healthSummaryTitleContainer}>
-            <MaterialCommunityIcons name="heart-pulse" size={22} color="#FB6F92" style={styles.healthSummaryIcon} />
-            <Text style={styles.healthSummaryTitle}>Tổng quan sức khỏe</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.healthSummaryViewAll} 
-            onPress={onNavigateToHealthStats}
-          >
-            <Text style={styles.healthSummaryViewAllText}>Xem tất cả</Text>
-            <View style={styles.healthSummaryArrowContainer}>
-              <MaterialCommunityIcons name="chevron-right" size={16} color="#FFF" />
-            </View>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={styles.healthSummaryHeader}
+              onPress={onNavigateToHealthStats}
+            >
+              <View style={styles.healthSummaryTitleContainer}>
+                <MaterialCommunityIcons name="heart-pulse" size={22} color="#FB6F92" style={styles.healthSummaryIcon} />
+                <Text style={styles.healthSummaryTitle}>Tổng quan sức khỏe</Text>
+              </View>
+              <View style={styles.healthSummaryViewAll}>
+                <Text style={styles.healthSummaryViewAllText}>Xem tất cả</Text>
+                <View style={styles.healthSummaryArrowContainer}>
+                  <MaterialCommunityIcons name="chevron-right" size={16} color="#FFF" />
+                </View>
+              </View>
+            </TouchableOpacity>
 
         <View style={styles.healthMetricsContainer}>
           <TouchableOpacity 
@@ -449,7 +452,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.healthMetricCard}>
+          <TouchableOpacity 
+            style={styles.healthMetricCard}
+            onPress={onNavigateToHealthStats}
+          >
             <View style={[styles.healthMetricIconContainer, { backgroundColor: '#E6F7FF' }]}>
               <MaterialCommunityIcons name={"shoe-print" as any} size={22} color="#40A9FF" />
             </View>
@@ -486,7 +492,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.healthMetricCard}>
+          <TouchableOpacity 
+            style={styles.healthMetricCard}
+            onPress={onNavigateToHealthStats}
+          >
             <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF7CD' }]}>
               <MaterialCommunityIcons name={"heart-flash" as any} size={22} color="#FFC53D" />
             </View>
@@ -528,7 +537,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.healthMetricCard}>
+          <TouchableOpacity 
+            style={styles.healthMetricCard}
+            onPress={onNavigateToHealthStats}
+          >
             <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFE8F7' }]}>
               <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#F759AB" />
             </View>
@@ -569,7 +581,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity style={styles.healthMetricCard}>
+          <TouchableOpacity 
+            style={styles.healthMetricCard}
+            onPress={onNavigateToHealthStats}
+          >
             <View style={[styles.healthMetricIconContainer, { backgroundColor: '#D9F7BE' }]}>
               <MaterialCommunityIcons name={"lungs" as any} size={22} color="#73D13D" />
             </View>

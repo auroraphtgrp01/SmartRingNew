@@ -286,48 +286,6 @@ export default function App() {
     }
   };
 
-  
-  return (
-    <HealthDataProvider>
-<ContextConnector />
-<SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
-      <View style={styles.container}>
-        <HomeScreen
-          device={connectedDevice}
-          onNavigateToHeartRate={navigateToHeartRate}
-          onNavigateToSpO2={navigateToSpO2}
-          onNavigateToSleepStats={navigateToSleepStats}
-          onNavigateToHealthStats={navigateToHealthStats}
-          onDisconnect={disconnectFromDevice}
-          bleService={connectedDevice ? bleService : null}
-          onConnect={handleConnectButtonPress}
-        />
-      </View>
-      
-      {/* Modal để hiển thị DeviceScanner */}
-      <CustomModal
-        visible={showScanner}
-        onClose={() => {
-          console.log('Đóng CustomModal');
-          setShowScanner(false);
-        }}
-      >
-        <DeviceScanner
-          isScanning={isScanning}
-          devices={devices}
-          onStartScan={startScan}
-          onConnectDevice={connectToDevice}
-          isConnecting={isConnecting}
-          onBack={() => setShowScanner(false)}
-          onDisconnectDevice={disconnectFromDevice}
-        />
-      </CustomModal>
-    </SafeAreaView>
-    </HealthDataProvider>
-    
-  );
-  
   // Render màn hình khi đã kết nối
   const renderConnectedScreens = () => {
     switch (currentScreen) {
@@ -343,17 +301,49 @@ export default function App() {
       default:
         return (
           <HomeScreen
-            device={connectedDevice!}
+            device={connectedDevice}
             onNavigateToHeartRate={navigateToHeartRate}
             onNavigateToSpO2={navigateToSpO2}
             onNavigateToSleepStats={navigateToSleepStats}
             onNavigateToHealthStats={navigateToHealthStats}
             onDisconnect={disconnectFromDevice}
-            bleService={bleService}
+            bleService={connectedDevice ? bleService : null}
+            onConnect={handleConnectButtonPress}
           />
         );
     }
-  }
+  };
+
+  return (
+    <HealthDataProvider>
+      <ContextConnector />
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+        <View style={styles.container}>
+          {renderConnectedScreens()}
+        </View>
+        
+        {/* Modal để hiển thị DeviceScanner */}
+        <CustomModal
+          visible={showScanner}
+          onClose={() => {
+            console.log('Đóng CustomModal');
+            setShowScanner(false);
+          }}
+        >
+          <DeviceScanner
+            isScanning={isScanning}
+            devices={devices}
+            onStartScan={startScan}
+            onConnectDevice={connectToDevice}
+            isConnecting={isConnecting}
+            onBack={() => setShowScanner(false)}
+            onDisconnectDevice={disconnectFromDevice}
+          />
+        </CustomModal>
+      </SafeAreaView>
+    </HealthDataProvider>
+  );
 }
 
 const styles = StyleSheet.create({
