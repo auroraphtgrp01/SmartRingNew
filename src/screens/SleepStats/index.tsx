@@ -333,21 +333,6 @@ const SleepStatsScreen: React.FC<SleepStatsScreenProps> = ({ onBack }) => {
               'Duy trì lịch trình ngủ đều đặn và đảm bảo nghỉ ngơi đủ 7-8 giờ mỗi đêm sẽ giúp cải thiện sức khỏe và tinh thần.'}
           </Text>
         </View>
-
-        <TouchableOpacity 
-          style={[styles.syncButton, isLoading && styles.syncButtonDisabled]}
-          onPress={handleSyncData}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" size="small" style={{ marginRight: 8 }} />
-          ) : (
-            <MaterialCommunityIcons name={"sync" as any} size={22} color="white" />
-          )}
-          <Text style={styles.syncButtonText}>
-            {isLoading ? 'Đang đồng bộ...' : 'Đồng bộ dữ liệu giấc ngủ'}
-          </Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -585,7 +570,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 48,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
