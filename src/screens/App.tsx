@@ -128,6 +128,30 @@ export default function App() {
     }
   };
 
+  const getSportData = async () => {
+    if (!connectedDevice) {
+      Alert.alert('Lỗi', 'Vui lòng kết nối với thiết bị trước');
+      return;
+    }
+
+    setIsFetchingSleepData(true);
+
+    try {
+      await bleService.getSportData((data) => {
+        setIsFetchingSleepData(false);
+        if (data) {
+          console.log('Dữ liệu thể thao:', data);
+        } else {
+          Alert.alert('Không có dữ liệu', 'Không nhận được dữ liệu thể thao từ thiết bị');
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu thể thao:', error);
+      setIsFetchingSleepData(false);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi lấy dữ liệu thể thao');
+    }
+  };
+
   // Hàm định dạng thời gian
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -164,35 +188,6 @@ export default function App() {
     </TouchableOpacity>
   );
 
-  // Hiển thị dữ liệu giấc ngủ
-  const renderSleepData = () => {
-    if (!sleepData || sleepData.length === 0) return null;
-
-    return sleepData.map((item, index) => (
-      <View key={index} style={styles.sleepDataItem}>
-        <Text style={styles.sleepDataTitle}>Phiên ngủ #{index + 1}</Text>
-        <Text>Bắt đầu: {formatDate(item.startTime)}</Text>
-        <Text>Kết thúc: {formatDate(item.endTime)}</Text>
-        <Text>Tổng thời gian ngủ sâu: {formatMinutes(item.deepSleepTotal)}</Text>
-        <Text>Tổng thời gian ngủ nhẹ: {formatMinutes(item.lightSleepTotal)}</Text>
-        <Text>Tổng thời gian REM: {formatMinutes(item.rapidEyeMovementTotal)}</Text>
-        <Text>Số lần thức giấc: {item.wakeCount}</Text>
-        <Text>Tổng thời gian thức giấc: {formatMinutes(item.wakeDuration)}</Text>
-        
-        <Text style={styles.sleepDetailTitle}>Chi tiết các giai đoạn:</Text>
-        <ScrollView style={styles.sleepDetailContainer}>
-          {item.sleepData.map((segment, segIndex) => (
-            <View key={segIndex} style={styles.sleepSegment}>
-              <Text>Thời gian: {formatDate(segment.sleepStartTime)}</Text>
-              <Text>Thời lượng: {segment.sleepLen} phút</Text>
-              <Text>Trạng thái: {getSleepTypeName(segment.sleepType)}</Text>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
-    ));
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Ứng Dụng Theo Dõi Giấc Ngủ</Text>
@@ -214,6 +209,13 @@ export default function App() {
             ) : (
               <Text style={styles.buttonText}>Lấy Dữ Liệu Giấc Ngủ</Text>
             )}
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.buttonDisconnect} 
+            onPress={getSportData}
+          >
+            <Text style={styles.buttonText}>Lấy Dữ Liệu Thể Thao</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
@@ -249,14 +251,6 @@ export default function App() {
             </View>
           )}
         </View>
-      )}
-      
-      {/* Hiển thị dữ liệu giấc ngủ */}
-      {sleepData && sleepData.length > 0 && (
-        <ScrollView style={styles.sleepDataContainer}>
-          <Text style={styles.sectionTitle}>Dữ Liệu Giấc Ngủ</Text>
-          {renderSleepData()}
-        </ScrollView>
       )}
     </View>
   );
