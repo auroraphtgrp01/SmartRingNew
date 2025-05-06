@@ -136,26 +136,59 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={styles.deviceInfo}>
-            <View style={styles.deviceIconContainer}>
-              <MaterialCommunityIcons name={"watch" as any} size={28} color="#40A9FF" />
-            </View>
-            <View>
-              <Text style={styles.deviceName}>{device.name || "Smart Ring"}</Text>
-              <View style={styles.deviceStatus}>
-                <View style={styles.statusDot} />
-                <Text style={styles.statusText}>Đã kết nối</Text>
+        <View style={styles.headerContainer}>
+          <View style={styles.headerGradient}>
+            <View style={styles.headerContent}>
+              <View style={styles.deviceInfoContainer}>
+                <View style={styles.ringIconContainer}>
+                  <View style={styles.ringOuterCircle}>
+                    <View style={styles.ringInnerCircle}>
+                      <MaterialCommunityIcons name={"ring" as any} size={24} color="#FB6F92" />
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.deviceTextContainer}>
+                  <Text style={styles.welcomeText}>Xin chào,</Text>
+                  <Text style={styles.deviceNameText}>{device.name || "Smart Ring"}</Text>
+                </View>
+              </View>
+
+              <View style={styles.headerActionsContainer}>
+                <TouchableOpacity 
+                  style={styles.headerActionButton}
+                  onPress={syncHealthData}
+                >
+                  <Animated.View style={{
+                    transform: [{ rotate: rotateInterpolate }],
+                    opacity: isSyncing ? 1 : 0.8
+                  }}>
+                    <MaterialCommunityIcons name={"sync" as any} size={22} color="#FFF" />
+                  </Animated.View>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.headerActionButton, styles.disconnectButton]}
+                  onPress={onDisconnect}
+                >
+                  <MaterialCommunityIcons name={"bluetooth-off" as any} size={22} color="#FFF" />
+                </TouchableOpacity>
               </View>
             </View>
-          </View>
-          <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.syncButton} onPress={syncHealthData}>
-              <MaterialCommunityIcons name={"sync" as any} size={20} color="#40A9FF" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.disconnectButton} onPress={onDisconnect}>
-              <MaterialCommunityIcons name={"bluetooth-off" as any} size={20} color="#666" />
-            </TouchableOpacity>
+
+            <View style={styles.connectionStatusBar}>
+              <View style={styles.connectionStatusIndicator}>
+                <View style={styles.pulsingDot}>
+                  <Animated.View 
+                    style={[
+                      styles.pulsingDotInner,
+                      { transform: [{ scale: pulseAnim }] }
+                    ]}
+                  />
+                </View>
+                <Text style={styles.connectionStatusText}>Đã kết nối và hoạt động tốt</Text>
+              </View>
+              <Text style={styles.batteryStatusText}>Pin: 85%</Text>
+            </View>
           </View>
         </View>
         <View style={styles.sleepSummaryCard}>
@@ -609,66 +642,121 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  header: {
+  headerContainer: {
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  headerGradient: {
+    backgroundColor: '#FB6F92',
+    paddingTop: 16,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  deviceInfo: {
+  deviceInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  deviceIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#E6F7FF',
+  ringIconContainer: {
+    marginRight: 14,
+  },
+  ringOuterCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
-  deviceName: {
+  ringInnerCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  deviceTextContainer: {
+    justifyContent: 'center',
+  },
+  welcomeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 2,
+  },
+  deviceNameText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FFFFFF',
   },
-  deviceStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#52C41A',
-    marginRight: 6,
-  },
-  statusText: {
-    fontSize: 14,
-    color: '#52C41A',
-  },
-  headerButtons: {
+  headerActionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  syncButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E6F7FF',
+  headerActionButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  disconnectButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  connectionStatusBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  connectionStatusIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  pulsingDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(82, 196, 26, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
-  disconnectButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F0F0F0',
-    justifyContent: 'center',
-    alignItems: 'center',
+  pulsingDotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#52C41A',
+  },
+  connectionStatusText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#52C41A',
+  },
+  batteryStatusText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
   },
   healthSummaryHeader: {
     flexDirection: 'row',
