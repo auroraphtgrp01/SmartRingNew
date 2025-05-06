@@ -8,6 +8,7 @@ import SportService from '../services/SportService';
 import HeartHistoryService from '../services/HeartHistoryService';
 import BloodPressureService from '../services/BloodPressureService';
 import ComprehensiveService from '../services/ComprehensiveService';
+import HealthSyncService from '../services/BaseHealthService';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -259,6 +260,17 @@ class BleService {
     }
     
     return await ComprehensiveService.getInstance().getComprehensiveData(this.device, callback);
+  }
+
+  public async syncHealthData(
+    onProgress?: (progress: number, currentService: string) => void,
+    onComplete?: () => void
+  ): Promise<boolean> {
+    if (!this.device || !this.isConnected) {
+      return false;
+    }
+    
+    return await HealthSyncService.getInstance().syncHealthData(this.device, onProgress, onComplete);
   }
 
 }

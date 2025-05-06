@@ -1,17 +1,15 @@
 import { Device, Characteristic } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
 import { ByteService } from '../core/ByteService';
-import BleService from '../core/BleService';
 import { Constants } from '../constants';
+import { BaseHealthService } from './BaseHealthService';
 
-export class SleepService {
+export class SleepService extends BaseHealthService<any[]> {
   private static instance: SleepService;
-  private sleepDataPackets: Array<Buffer> = [];
-  private isReceivingSleepData: boolean = false;
-  private sleepDataCallback: ((data: any[] | null) => void) | null = null;
-  private dataTimeoutId: NodeJS.Timeout | null = null;
   
-  private constructor() {}
+  private constructor() {
+    super();
+  }
   
   public static getInstance(): SleepService {
     if (!SleepService.instance) {
@@ -21,61 +19,12 @@ export class SleepService {
   }
   
   public async getSleepData(device: Device, callback: (data: any[] | null) => void): Promise<boolean> {
-    if (!device || !device.isConnected) {
-      callback(null);
-      return false;
-    }
-    
-    this.sleepDataCallback = callback;
-    this.sleepDataPackets = [];
-    this.isReceivingSleepData = false;
-    
-    try {
-      await BleService.getInstance().setupNotifications();
-      
-      device.monitorCharacteristicForService(
-        Constants.UUID.SERVICE_UUID,
-        Constants.UUID.COMMAND_CHARACTERISTIC_UUID,
-        this.handleCharacteristicUpdate.bind(this, device)
-      );
-      
-      device.monitorCharacteristicForService(
-        Constants.UUID.SERVICE_UUID,
-        Constants.UUID.DATA_CHARACTERISTIC_UUID,
-        this.handleCharacteristicUpdate.bind(this, device)
-      );
-      
-      const initCommand = Constants.COMMAND_BYTE.INIT_HEALTH_BLOCK;
-      const finalInitCommand = ByteService.createCommandWithCRC(initCommand);
-      
-      console.log('Gửi lệnh khởi tạo:', ByteService.bufferToHexString(finalInitCommand), `(Độ dài: ${finalInitCommand.length} bytes)`)
-      
-      await device.writeCharacteristicWithResponseForService(
-        Constants.UUID.SERVICE_UUID,
-        Constants.UUID.COMMAND_CHARACTERISTIC_UUID,
-        finalInitCommand.toString('base64')
-      );
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      const sleepCommand = Constants.COMMAND_BYTE.GET_SLEEP_HISTORY;
-      const finalSleepCommand = ByteService.createCommandWithCRC(sleepCommand);
-      
-      await device.writeCharacteristicWithResponseForService(
-        Constants.UUID.SERVICE_UUID,
-        Constants.UUID.COMMAND_CHARACTERISTIC_UUID,
-        finalSleepCommand.toString('base64')
-      );
-      
-      return true;
-    } catch (error) {
-      console.error('Lỗi khi gửi lệnh lấy dữ liệu giấc ngủ:', error);
-      callback(null);
-      return false;
-    }
+    // Chuyển đổi Uint8Array thành Buffer
+    const sleepCommand = Buffer.from(Constants.COMMAND_BYTE.GET_SLEEP_HISTORY);
+    return this.getData(device, callback, sleepCommand, 'giấc ngủ');
   }
 
-  private handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {
+  protected handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void {
     if (error) {
       console.error('Lỗi khi nhận dữ liệu:', error);
       return;
@@ -100,15 +49,15 @@ export class SleepService {
       // Kiểm tra xem có phải gói thông tin giấc ngủ không (0x0504)
       if (buffer[0] === 0x05 && buffer[1] === 0x04) {
         console.log('Nhận được gói thông tin giấc ngủ');
-        this.isReceivingSleepData = true;
-        this.sleepDataPackets = [];
+        this.isReceivingData = true;
+        this.dataPackets = [];
       }
     }
     
     // Xử lý dữ liệu từ characteristic dữ liệu (DATA_CHARACTERISTIC)
     else if (characteristic.uuid.toLowerCase() === Constants.UUID.DATA_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói dữ liệu giấc ngủ không (0x0513)
-      if (buffer[0] === 0x05 && buffer[1] === 0x13 && this.isReceivingSleepData) {
+      if (buffer[0] === 0x05 && buffer[1] === 0x13 && this.isReceivingData) {
         console.log('Nhận được gói dữ liệu giấc ngủ');
       
         // Lấy độ dài gói
@@ -118,37 +67,19 @@ export class SleepService {
         const payload = buffer.slice(4, buffer.length - 2);
         
         // Thêm vào mảng gói dữ liệu
-        this.sleepDataPackets.push(payload);
+        this.dataPackets.push(payload);
         
         // Bắt đầu bộ đếm timeout để kiểm tra khi nào dữ liệu hoàn tất
-        this.startDataTimeoutCheck((data: any) => {
-         console.log(data.toString())
-        });
+        this.startDataTimeoutCheck(this.isReceivingData, this.dataPackets, (data: any) => {
+          if (this.dataCallback) {
+            this.dataCallback(data);
+          }
+        }, 'giấc ngủ');
       }
     }
   }
  
-  private startDataTimeoutCheck(onMerge: (data: any) => any): void {
-    if (this.dataTimeoutId) {
-      clearTimeout(this.dataTimeoutId);
-    }
-    
-    this.dataTimeoutId = setTimeout(() => {
-      if (this.isReceivingSleepData && this.sleepDataPackets.length > 0) {
-        console.log(`Đã nhận ${this.sleepDataPackets.length} gói dữ liệu giấc ngủ, tiến hành ghép dữ liệu`);
-        
-        this.sleepDataPackets.forEach((packet, index) => {
-          console.log(`Gói dữ liệu ${index + 1}: ${ByteService.bufferToHexString(packet)} (Độ dài: ${packet.length} bytes)`);
-        });
-        
-        const combinedData = Buffer.concat(this.sleepDataPackets);
-        const convertToUnit8 = new Uint8Array(combinedData)
-        console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
-        onMerge(convertToUnit8);
-        this.isReceivingSleepData = false;
-      }
-    }, 1500); 
-  }
+
 }
 
 export default SleepService;

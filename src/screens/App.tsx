@@ -271,6 +271,26 @@ export default function App() {
           <Text style={styles.sectionTitle}>Thiết bị đã kết nối</Text>
           <Text style={styles.deviceName}>{connectedDevice.name}</Text>
           <Text style={styles.deviceId}>ID: {connectedDevice.id}</Text>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={() => {
+              try {
+                 bleService.syncHealthData((progress, currentService) => {
+                  console.log(`Đồng bộ dữ liệu: ${progress}% - ${currentService}`);
+                });
+              } catch (error) {
+                console.error('Lỗi khi đồng bộ dữ liệu:', error);
+              }
+            }}
+            disabled={isFetchingSleepData}
+          >
+            {isFetchingSleepData ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>Đồng bộ dữ liệu</Text>
+            )}
+          </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.button} 
