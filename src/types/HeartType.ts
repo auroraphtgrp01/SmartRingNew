@@ -1,10 +1,9 @@
-interface HeartDataResponse {
-    code: number;
-    data: HeartData[];
-    dataType: number;
-  }
-  
-  interface HeartData {
-    heartStartTime: string;
-    heartValue: number;
-  }
+interface HeartRateItem {
+  heartStartTime: string;
+  heartValue: number;
+}
+
+interface HeartRateData {
+  avgHeartRate: number;
+  data: HeartRateItem[];
+}

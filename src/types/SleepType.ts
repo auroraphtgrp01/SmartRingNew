@@ -29,12 +29,6 @@ interface SleepDataItem {
   wakeDuration: number;
 }
 
-interface SleepData {
-  code: number;
-  dataType: number;
-  data: SleepDataItem[];
-}
-
 interface TransformedSleepDataItem {
   startTime: string;
   endTime: string;
@@ -49,6 +43,17 @@ interface SleepOverview {
   totalLightSleep: number;
   totalREM: number;
   totalSleepTime: number;
+}
+
+interface SleepDataItem {
+  endTime: string;
+  sleepData: SleepItem[];
+  startTime: string;
+}
+
+interface SleepData {
+  overview: SleepOverview;
+  sleepData: SleepDataItem[];
 }
 
 interface FinalSleepData {
