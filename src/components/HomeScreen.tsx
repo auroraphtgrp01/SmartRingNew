@@ -656,24 +656,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                   transform: [{ scale: pulseAnim }]
                 }]}
               >
-                {currentService === 'heartHistory' && (
-                  <MaterialCommunityIcons name="heart-pulse" size={24} color="#FB6F92" />
-                )}
-                {currentService === 'sleepHistory' && (
-                  <MaterialCommunityIcons name="sleep" size={24} color="#69C0FF" />
-                )}
-                {currentService === 'sportHistory' && (
-                  <MaterialCommunityIcons name="run" size={24} color="#95DE64" />
-                )}
-                {currentService === 'bloodPressureHistory' && (
-                  <MaterialCommunityIcons name="heart-pulse" size={24} color="#FF8FAB" />
-                )}
-                {currentService === 'comprehensiveMeasurement' && (
-                  <MaterialCommunityIcons name="clipboard-pulse" size={24} color="#FFCF33" />
-                )}
-                {!currentService && (
-                  <MaterialCommunityIcons name="sync" size={24} color="#40A9FF" />
-                )}
+                <MaterialCommunityIcons 
+                  name={currentService === 'heartHistory' ? "heart-pulse" : 
+                       currentService === 'sleepHistory' ? "sleep" : 
+                       currentService === 'sportHistory' ? "run" : 
+                       currentService === 'bloodPressureHistory' ? "heart-pulse" : 
+                       currentService === 'comprehensiveMeasurement' ? "clipboard-pulse" : 
+                       "sync"} 
+                  size={24} 
+                  color={currentService === 'heartHistory' ? "#FB6F92" : 
+                         currentService === 'sleepHistory' ? "#69C0FF" : 
+                         currentService === 'sportHistory' ? "#95DE64" : 
+                         currentService === 'bloodPressureHistory' ? "#FF8FAB" : 
+                         currentService === 'comprehensiveMeasurement' ? "#FFCF33" : 
+                         "#40A9FF"} 
+                />
               </Animated.View>
               <Text style={styles.syncServiceName}>
                 {currentService ? getServiceName(currentService) : 'Chuẩn bị đồng bộ...'}
