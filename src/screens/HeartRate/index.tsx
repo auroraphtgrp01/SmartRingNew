@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import BleService from '../../core/BleService';
 
@@ -11,15 +11,40 @@ const HeartRateScreen: React.FC<HeartRateScreenProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [heartRate, setHeartRate] = useState<number>(0);
   const [status, setStatus] = useState<string>('Bình thường');
+  const [pulseAnim] = useState(new Animated.Value(1));
+
+  // Hiệu ứng nhịp đập cho biểu tượng trái tim
+  const startPulseAnimation = () => {
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.2,
+        duration: 500,
+        useNativeDriver: true
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      if (isLoading) {
+        startPulseAnimation();
+      }
+    });
+  };
 
   const measureHeartRate = async () => {
     setIsLoading(true);
+    // Bắt đầu hiệu ứng nhịp đập
+    startPulseAnimation();
+    // Đặt lại nhịp tim về 0 để hiển thị skeleton
+    setHeartRate(0);
+    
     const bleService = BleService.getInstance();
     
     try {
       await bleService.startHeartRate((data) => {
         console.log('Nhịp tim ở screen', data);
-        setIsLoading(false);
         if (data) {
           setHeartRate(data);
           console.log('Nhịp tim:', data);
@@ -31,6 +56,8 @@ const HeartRateScreen: React.FC<HeartRateScreenProps> = ({ onBack }) => {
           } else {
             setStatus('Bình thường');
           }
+          // Dừng loading sau khi có dữ liệu
+          setIsLoading(false);
         } else {
           // Nếu không nhận được dữ liệu, giữ nguyên giá trị hiện tại
         }
@@ -64,8 +91,22 @@ const HeartRateScreen: React.FC<HeartRateScreenProps> = ({ onBack }) => {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Nhịp tim hiện tại</Text>
             <View style={styles.heartRateContainer}>
-              <MaterialCommunityIcons name={"heart-pulse" as any} size={40} color="#FB6F92" />
-              <Text style={styles.heartRateValue}>{heartRate}</Text>
+              {isLoading ? (
+                <Animated.View style={{
+                  transform: [{ scale: pulseAnim }]
+                }}>
+                  <MaterialCommunityIcons name={"heart-pulse" as any} size={40} color="#FB6F92" />
+                </Animated.View>
+              ) : (
+                <MaterialCommunityIcons name={"heart-pulse" as any} size={40} color="#FB6F92" />
+              )}
+              {isLoading ? (
+                <View style={styles.skeletonContainer}>
+                  <View style={styles.skeletonValue} />
+                </View>
+              ) : (
+                <Text style={styles.heartRateValue}>{heartRate}</Text>
+              )}
               <Text style={styles.heartRateUnit}>BPM</Text>
             </View>
             <Text style={[styles.statusText, { color: getStatusColor() }]}>{status}</Text>
@@ -183,6 +224,17 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#52C41A',
     marginTop: 10,
+  },
+  skeletonContainer: {
+    justifyContent: 'center',
+    marginHorizontal: 10,
+  },
+  skeletonValue: {
+    width: 80,
+    height: 48,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 8,
+    opacity: 0.7,
   },
   infoContainer: {
     backgroundColor: 'white',

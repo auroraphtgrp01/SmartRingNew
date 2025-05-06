@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, ActivityIndicator, Animated } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import BleService from '../../core/BleService';
 
@@ -9,29 +9,54 @@ interface SpO2ScreenProps {
 
 const SpO2Screen: React.FC<SpO2ScreenProps> = ({ onBack }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [spo2Value, setSpo2Value] = useState<number>(98);
+  const [spo2Value, setSpo2Value] = useState<number>(0);
   const [status, setStatus] = useState<string>('Tốt');
+  const [pulseAnim] = useState(new Animated.Value(1));
+
+  // Hiệu ứng nhịp đập cho biểu tượng oxy
+  const startPulseAnimation = () => {
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.2,
+        duration: 500,
+        useNativeDriver: true
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      if (isLoading) {
+        startPulseAnimation();
+      }
+    });
+  };
 
   const measureSpo2 = async () => {
     setIsLoading(true);
+    // Bắt đầu hiệu ứng nhịp đập
+    startPulseAnimation();
+    // Đặt lại giá trị SpO2 về 0 để hiển thị skeleton
+    setSpo2Value(0);
+    
     const bleService = BleService.getInstance();
     
     try {
       await bleService.startSpo2((data) => {
         setIsLoading(false);
-        if (data && data.spo2) {
-          setSpo2Value(data.spo2);
+        if (data) {
+          setSpo2Value(data);
           
           // Cập nhật trạng thái dựa trên giá trị SpO2
-          if (data.spo2 >= 95) {
+          if (data >= 95) {
             setStatus('Tốt');
-          } else if (data.spo2 >= 90) {
+          } else if (data >= 90) {
             setStatus('Trung bình');
           } else {
             setStatus('Thấp');
           }
         } else {
-          // Nếu không nhận được dữ liệu, giữ nguyên giá trị hiện tại
         }
       });
     } catch (error) {
@@ -63,8 +88,22 @@ const SpO2Screen: React.FC<SpO2ScreenProps> = ({ onBack }) => {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>SpO2 hiện tại</Text>
             <View style={styles.spo2Container}>
-              <MaterialCommunityIcons name={"water-percent" as any} size={40} color="#95DE64" />
-              <Text style={styles.spo2Value}>{spo2Value}</Text>
+              {isLoading ? (
+                <Animated.View style={{
+                  transform: [{ scale: pulseAnim }]
+                }}>
+                  <MaterialCommunityIcons name={"water-percent" as any} size={40} color="#95DE64" />
+                </Animated.View>
+              ) : (
+                <MaterialCommunityIcons name={"water-percent" as any} size={40} color="#95DE64" />
+              )}
+              {isLoading ? (
+                <View style={styles.skeletonContainer}>
+                  <View style={styles.skeletonValue} />
+                </View>
+              ) : (
+                <Text style={styles.spo2Value}>{spo2Value}</Text>
+              )}
               <Text style={styles.spo2Unit}>%</Text>
             </View>
             <Text style={[styles.statusText, { color: getStatusColor() }]}>{status}</Text>
@@ -114,6 +153,17 @@ const SpO2Screen: React.FC<SpO2ScreenProps> = ({ onBack }) => {
 };
 
 const styles = StyleSheet.create({
+  skeletonContainer: {
+    justifyContent: 'center',
+    marginHorizontal: 10,
+  },
+  skeletonValue: {
+    width: 80,
+    height: 48,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 8,
+    opacity: 0.7,
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',

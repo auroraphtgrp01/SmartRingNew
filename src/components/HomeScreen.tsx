@@ -88,9 +88,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             <Text style={styles.quickStatLabel}>82% mục tiêu</Text>
           </View>
         </View>
-
-        <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Chức năng</Text>
-        
         <View style={styles.featuresGrid}>
           <TouchableOpacity 
             style={styles.featureCard} 
