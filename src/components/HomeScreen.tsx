@@ -158,122 +158,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </TouchableOpacity>
           </View>
         </View>
-
-        <View style={styles.summary}>
-          <Text style={styles.sectionTitle}>Tổng quan sức khỏe</Text>
-          <TouchableOpacity 
-            style={styles.seeAllButton} 
-            onPress={onNavigateToHealthStats}
-          >
-            <Text style={styles.seeAllText}>Xem tất cả</Text>
-            <MaterialCommunityIcons name="chevron-right" size={18} color="#40A9FF" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.quickStatsContainer}>
-          <View style={[styles.quickStatCard, { backgroundColor: '#FFF0F6' }]}>
-            <View style={styles.quickStatHeader}>
-              <MaterialCommunityIcons name={"heart-pulse" as any} size={20} color="#FB6F92" />
-              <Text style={styles.quickStatTitle}>Nhịp tim</Text>
-            </View>
-            <Text style={styles.quickStatValue}>
-              {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 
-                ? heartHistoryData.data[heartHistoryData.data.length - 1].heartValue 
-                : '---'} <Text style={styles.quickStatUnit}>BPM</Text>
-            </Text>
-            <Text style={styles.quickStatLabel}>
-              {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 
-                ? (() => {
-                    const heartRate = heartHistoryData.data[heartHistoryData.data.length - 1].heartValue;
-                    if (heartRate >= 60 && heartRate <= 100) return 'Bình thường';
-                    else if (heartRate < 60) return 'Thấp';
-                    else return 'Cao';
-                  })()
-                : 'N/A'}
-            </Text>
-          </View>
-          
-          <View style={[styles.quickStatCard, { backgroundColor: '#F6FFED' }]}>
-            <View style={styles.quickStatHeader}>
-              <MaterialCommunityIcons name={"water-percent" as any} size={20} color="#95DE64" />
-              <Text style={styles.quickStatTitle}>SpO2</Text>
-            </View>
-            <Text style={styles.quickStatValue}>
-              {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 
-                ? comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue 
-                : '---'} <Text style={styles.quickStatUnit}>%</Text>
-            </Text>
-            <Text style={styles.quickStatLabel}>
-              {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 
-                ? (() => {
-                    const spo2 = comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue;
-                    if (spo2 >= 95) return 'Tốt';
-                    else if (spo2 >= 90) return 'Bình thường';
-                    else return 'Thấp';
-                  })()
-                : 'N/A'}
-            </Text>
-          </View>
-          
-          <View style={[styles.quickStatCard, { backgroundColor: '#E6F7FF' }]}>
-            <View style={styles.quickStatHeader}>
-              <MaterialCommunityIcons name={"shoe-print" as any} size={20} color="#40A9FF" />
-              <Text style={styles.quickStatTitle}>Bước chân</Text>
-            </View>
-            <Text style={styles.quickStatValue}>
-              {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 
-                ? sportHistoryData.data[sportHistoryData.data.length - 1].sportStep.toLocaleString('vi-VN')
-                : '---'}
-            </Text>
-            <Text style={styles.quickStatLabel}>
-              {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 
-                ? `${Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}% mục tiêu`
-                : 'N/A'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.featuresGrid}>
-          <TouchableOpacity 
-            style={styles.featureCard} 
-            onPress={onNavigateToHeartRate}
-          >
-            <View style={[styles.featureIconContainer, { backgroundColor: '#FFF0F6' }]}>
-              <MaterialCommunityIcons name={"heart-pulse" as any} size={28} color="#FB6F92" />
-            </View>
-            <Text style={styles.featureText}>Nhịp tim</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.featureCard} 
-            onPress={onNavigateToSpO2}
-          >
-            <View style={[styles.featureIconContainer, { backgroundColor: '#F6FFED' }]}>
-              <MaterialCommunityIcons name={"water-percent" as any} size={28} color="#95DE64" />
-            </View>
-            <Text style={styles.featureText}>SpO2</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.featureCard} 
-            onPress={onNavigateToSleepStats}
-          >
-            <View style={[styles.featureIconContainer, { backgroundColor: '#EAE8FD' }]}>
-              <MaterialCommunityIcons name={"sleep" as any} size={28} color="#6979F8" />
-            </View>
-            <Text style={styles.featureText}>Giấc ngủ</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.featureCard} 
-            onPress={onNavigateToHealthStats}
-          >
-            <View style={[styles.featureIconContainer, { backgroundColor: '#FFF7E6' }]}>
-              <MaterialCommunityIcons name={"chart-box" as any} size={28} color="#FFB980" />
-            </View>
-            <Text style={styles.featureText}>Thống kê</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.sleepSummaryCard}>
           <View style={styles.cardHeader}>
             <View style={styles.cardTitleContainer}>
@@ -374,10 +258,275 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
             </View>
           </View>
         </View>
+        <View style={styles.healthSummaryHeader}>
+          <View style={styles.healthSummaryTitleContainer}>
+            <MaterialCommunityIcons name="heart-pulse" size={22} color="#FB6F92" style={styles.healthSummaryIcon} />
+            <Text style={styles.healthSummaryTitle}>Tổng quan sức khỏe</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.healthSummaryViewAll} 
+            onPress={onNavigateToHealthStats}
+          >
+            <Text style={styles.healthSummaryViewAllText}>Xem tất cả</Text>
+            <View style={styles.healthSummaryArrowContainer}>
+              <MaterialCommunityIcons name="chevron-right" size={16} color="#FFF" />
+            </View>
+          </TouchableOpacity>
+        </View>
 
+        <View style={styles.healthMetricsContainer}>
+          <TouchableOpacity 
+            style={styles.healthMetricCard}
+            onPress={onNavigateToHeartRate}
+          >
+            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF0F6' }]}>
+              <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#FB6F92" />
+            </View>
+            <View style={styles.healthMetricContent}>
+              <Text style={styles.healthMetricTitle}>Nhịp tim</Text>
+              <Text style={styles.healthMetricValue}>
+                {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 
+                  ? heartHistoryData.data[heartHistoryData.data.length - 1].heartValue 
+                  : '---'} <Text style={styles.healthMetricUnit}>BPM</Text>
+              </Text>
+              <View style={styles.healthMetricStatusContainer}>
+                {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 && 
+                  (() => {
+                    const heartRate = heartHistoryData.data[heartHistoryData.data.length - 1].heartValue;
+                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
+                    let statusText = 'Bình thường';
+                    
+                    if (heartRate < 60) {
+                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
+                      statusText = 'Thấp';
+                    } else if (heartRate > 100) {
+                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
+                      statusText = 'Cao';
+                    }
+                    
+                    return (
+                      <>
+                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                      </>
+                    );
+                  })()
+                }
+                {(!heartHistoryData || !heartHistoryData.data || heartHistoryData.data.length === 0) && (
+                  <Text style={styles.healthMetricStatusText}>N/A</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.healthMetricCard}
+            onPress={onNavigateToSpO2}
+          >
+            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#F6FFED' }]}>
+              <MaterialCommunityIcons name={"water-percent" as any} size={22} color="#95DE64" />
+            </View>
+            <View style={styles.healthMetricContent}>
+              <Text style={styles.healthMetricTitle}>SpO2</Text>
+              <Text style={styles.healthMetricValue}>
+                {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 
+                  ? comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue 
+                  : '---'} <Text style={styles.healthMetricUnit}>%</Text>
+              </Text>
+              <View style={styles.healthMetricStatusContainer}>
+                {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 && 
+                  (() => {
+                    const spo2 = comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue;
+                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái tốt
+                    let statusText = 'Tốt';
+                    
+                    if (spo2 < 90) {
+                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái thấp
+                      statusText = 'Thấp';
+                    } else if (spo2 < 95) {
+                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái bình thường
+                      statusText = 'Bình thường';
+                    }
+                    
+                    return (
+                      <>
+                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                      </>
+                    );
+                  })()
+                }
+                {(!comprehensiveHistoryData || !comprehensiveHistoryData.data || comprehensiveHistoryData.data.length === 0) && (
+                  <Text style={styles.healthMetricStatusText}>N/A</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.healthMetricCard}>
+            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#E6F7FF' }]}>
+              <MaterialCommunityIcons name={"shoe-print" as any} size={22} color="#40A9FF" />
+            </View>
+            <View style={styles.healthMetricContent}>
+              <Text style={styles.healthMetricTitle}>Bước chân</Text>
+              <Text style={styles.healthMetricValue}>
+                {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 
+                  ? sportHistoryData.data[sportHistoryData.data.length - 1].sportStep.toLocaleString('vi-VN')
+                  : '---'}
+              </Text>
+              <View style={styles.healthMetricProgressContainer}>
+                {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 && (
+                  <>
+                    <View style={styles.healthMetricProgressBar}>
+                      <View 
+                        style={[
+                          styles.healthMetricProgressFill, 
+                          { 
+                            width: `${Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}%`,
+                            backgroundColor: '#40A9FF'
+                          }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.healthMetricProgressText}>
+                      {Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}%
+                    </Text>
+                  </>
+                )}
+                {(!sportHistoryData || !sportHistoryData.data || sportHistoryData.data.length === 0) && (
+                  <Text style={styles.healthMetricStatusText}>N/A</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.healthMetricCard}>
+            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF7CD' }]}>
+              <MaterialCommunityIcons name={"heart-flash" as any} size={22} color="#FFC53D" />
+            </View>
+            <View style={styles.healthMetricContent}>
+              <Text style={styles.healthMetricTitle}>Huyết Áp</Text>
+              <Text style={styles.healthMetricValue}>
+                {bloodPressureHistoryData && bloodPressureHistoryData.historyData && bloodPressureHistoryData.historyData.length > 0 
+                  ? `${bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodSBP}/${bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodDBP}`
+                  : '---'} <Text style={styles.healthMetricUnit}>mmHg</Text>
+              </Text>
+              <View style={styles.healthMetricStatusContainer}>
+                {bloodPressureHistoryData && bloodPressureHistoryData.historyData && bloodPressureHistoryData.historyData.length > 0 && 
+                  (() => {
+                    const systolic = bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodSBP;
+                    const diastolic = bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodDBP;
+                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
+                    let statusText = 'Bình thường';
+                    
+                    if (systolic > 140 || diastolic > 90) {
+                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
+                      statusText = 'Cao';
+                    } else if (systolic < 90 || diastolic < 60) {
+                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
+                      statusText = 'Thấp';
+                    }
+                    
+                    return (
+                      <>
+                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                      </>
+                    );
+                  })()
+                }
+                {(!bloodPressureHistoryData || !bloodPressureHistoryData.historyData || bloodPressureHistoryData.historyData.length === 0) && (
+                  <Text style={styles.healthMetricStatusText}>N/A</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.healthMetricCard}>
+            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFE8F7' }]}>
+              <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#F759AB" />
+            </View>
+            <View style={styles.healthMetricContent}>
+              <Text style={styles.healthMetricTitle}>Biến thiên nhịp tim</Text>
+              <Text style={styles.healthMetricValue}>
+                {comprehensiveHistoryData && comprehensiveHistoryData.overview 
+                  ? comprehensiveHistoryData.overview.hrvValueAvg
+                  : '---'} <Text style={styles.healthMetricUnit}>ms</Text>
+              </Text>
+              <View style={styles.healthMetricStatusContainer}>
+                {comprehensiveHistoryData && comprehensiveHistoryData.overview && 
+                  (() => {
+                    const hrvValue = comprehensiveHistoryData.overview.hrvValueAvg;
+                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái tốt
+                    let statusText = 'Tốt';
+                    
+                    if (hrvValue < 30) {
+                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái thấp
+                      statusText = 'Thấp';
+                    } else if (hrvValue < 50) {
+                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái trung bình
+                      statusText = 'Trung bình';
+                    }
+                    
+                    return (
+                      <>
+                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                      </>
+                    );
+                  })()
+                }
+                {(!comprehensiveHistoryData || !comprehensiveHistoryData.overview) && (
+                  <Text style={styles.healthMetricStatusText}>N/A</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.healthMetricCard}>
+            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#D9F7BE' }]}>
+              <MaterialCommunityIcons name={"lungs" as any} size={22} color="#73D13D" />
+            </View>
+            <View style={styles.healthMetricContent}>
+              <Text style={styles.healthMetricTitle}>Tần số hô hấp</Text>
+              <Text style={styles.healthMetricValue}>
+                {comprehensiveHistoryData && comprehensiveHistoryData.overview 
+                  ? comprehensiveHistoryData.overview.respiratoryRateValueAvg
+                  : '---'} <Text style={styles.healthMetricUnit}>BPM</Text>
+              </Text>
+              <View style={styles.healthMetricStatusContainer}>
+                {comprehensiveHistoryData && comprehensiveHistoryData.overview && 
+                  (() => {
+                    const respiratoryRate = comprehensiveHistoryData.overview.respiratoryRateValueAvg;
+                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
+                    let statusText = 'Bình thường';
+                    
+                    if (respiratoryRate < 12) {
+                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
+                      statusText = 'Thấp';
+                    } else if (respiratoryRate > 20) {
+                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
+                      statusText = 'Cao';
+                    }
+                    
+                    return (
+                      <>
+                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                      </>
+                    );
+                  })()
+                }
+                {(!comprehensiveHistoryData || !comprehensiveHistoryData.overview) && (
+                  <Text style={styles.healthMetricStatusText}>N/A</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+    
       </ScrollView>
       
-      {/* Modal hiển thị khi đang đồng bộ dữ liệu */}
       <Modal
         visible={isSyncing}
         transparent={true}
@@ -521,11 +670,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  summary: {
+  healthSummaryHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  healthSummaryTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  healthSummaryIcon: {
+    marginRight: 8,
+  },
+  healthSummaryTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  healthSummaryViewAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  healthSummaryViewAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#40A9FF',
+    marginRight: 6,
+  },
+  healthSummaryArrowContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#40A9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 18,
@@ -540,6 +720,90 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#40A9FF',
     marginRight: 2,
+  },
+  healthMetricsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  healthMetricCard: {
+    width: '48%',
+    backgroundColor: 'white',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  healthMetricIconContainer: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  healthMetricContent: {
+    flex: 1,
+  },
+  healthMetricTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 4,
+  },
+  healthMetricValue: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 6,
+  },
+  healthMetricUnit: {
+    fontSize: 12,
+    fontWeight: 'normal',
+    color: '#666',
+  },
+  healthMetricStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  healthMetricStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  healthMetricStatusText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  healthMetricProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  healthMetricProgressBar: {
+    flex: 1,
+    height: 6,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 3,
+    marginRight: 8,
+    overflow: 'hidden',
+  },
+  healthMetricProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  healthMetricProgressText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#40A9FF',
+    width: 30,
   },
   quickStatsContainer: {
     flexDirection: 'row',
@@ -618,6 +882,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 16,
+    marginBottom: 20,
     marginVertical: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
