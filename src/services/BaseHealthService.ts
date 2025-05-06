@@ -3,6 +3,7 @@ import { Buffer } from 'buffer';
 import { ByteService } from '../core/ByteService';
 import BleService from '../core/BleService';
 import { Constants } from '../constants';
+import { unpackHealthData } from '../core/UnpackData';
 
 export abstract class BaseHealthService<T> {
   protected dataPackets: Array<Buffer> = [];
@@ -10,6 +11,8 @@ export abstract class BaseHealthService<T> {
   protected dataCallback: ((data: T | null) => void) | null = null;
   protected dataTimeoutId: NodeJS.Timeout | null = null;
   protected dataType: number = 0;
+
+  protected abstract handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void;
   
   protected constructor() {}
  
@@ -74,8 +77,6 @@ export abstract class BaseHealthService<T> {
     }
   }
 
-  protected abstract handleCharacteristicUpdate(device: Device, error: Error | null, characteristic: any | null): void;
-  
   protected startDataTimeoutCheck(
     isReceivingData: boolean,
     dataPackets: Array<Buffer>,
@@ -100,8 +101,14 @@ export abstract class BaseHealthService<T> {
         console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
         onMerge(convertToUnit8);
         this.isReceivingData = false;
+        this.handleUnpackData(convertToUnit8, this.dataType);
       }
     }, 1500); 
+  }
+
+  protected handleUnpackData(data: Uint8Array, dataType: number) {
+    const unpackedData = unpackHealthData(data, dataType);
+    console.log('Dữ liệu giải nén:', unpackedData);
   }
 }
 
