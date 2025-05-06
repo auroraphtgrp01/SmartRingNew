@@ -1,4 +1,4 @@
-import { Device, Characteristic } from 'react-native-ble-plx';
+import { Device } from 'react-native-ble-plx';
 import { Buffer } from 'buffer';
 import { ByteService } from '../core/ByteService';
 import { Constants } from '../constants';

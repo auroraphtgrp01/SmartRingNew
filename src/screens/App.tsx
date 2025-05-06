@@ -200,6 +200,30 @@ export default function App() {
     }
   };
 
+  const startSpo2 =async () => {
+    if (!connectedDevice) {
+      Alert.alert('Lỗi', 'Vui lòng kết nối với thiết bị trước');
+      return;
+    }
+
+    setIsFetchingSleepData(true);
+
+    try {
+      await bleService.startSpo2((data) => {
+        setIsFetchingSleepData(false);
+        if (data) {
+          console.log('Dữ liệu nhịp tim:', data);
+        } else {
+          Alert.alert('Không có dữ liệu', 'Không nhận được dữ liệu nhịp tim từ thiết bị');
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu thể thao:', error);
+      setIsFetchingSleepData(false);
+      Alert.alert('Lỗi', 'Đã xảy ra lỗi khi lấy dữ liệu thể thao');
+    }
+  };
+
   const getDeviceInfo =async () => {
     if (!connectedDevice) {
       Alert.alert('Lỗi', 'Vui lòng kết nối với thiết bị trước');
@@ -295,6 +319,13 @@ export default function App() {
           <Text style={styles.sectionTitle}>Thiết bị đã kết nối</Text>
           <Text style={styles.deviceName}>{connectedDevice.name}</Text>
           <Text style={styles.deviceId}>ID: {connectedDevice.id}</Text>
+
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={startSpo2}
+          >
+            <Text style={styles.buttonText}>Đo spo2</Text>
+          </TouchableOpacity>
 
           <TouchableOpacity 
             style={styles.button} 

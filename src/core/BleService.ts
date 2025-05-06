@@ -10,6 +10,7 @@ import BloodPressureService from '../services/BloodPressureService';
 import ComprehensiveService from '../services/ComprehensiveService';
 import HealthSyncService from '../services/BaseHealthService';
 import DeviceInfoService from '../services/DeviceInfoService';
+import SpO2Service from '../services/SpO2Service';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -281,6 +282,32 @@ class BleService {
     }
     
     return await DeviceInfoService.getInstance().getDeviceInfo(this.device, callback);
+  }
+
+  /**
+   * Bắt đầu đo SPO2
+   * @param callback Callback nhận dữ liệu SPO2
+   * @returns true nếu gửi lệnh thành công, false nếu có lỗi
+   */
+  public async startSpo2(callback: (data: any | null) => void): Promise<boolean> {
+    if (!this.device || !this.isConnected) {
+      callback(null);
+      return false;
+    }
+    
+    return await SpO2Service.getInstance().startSpo2(this.device, callback);
+  }
+
+  /**
+   * Dừng đo SPO2
+   * @returns true nếu gửi lệnh thành công, false nếu có lỗi
+   */
+  public async stopSpo2(): Promise<boolean> {
+    if (!this.device || !this.isConnected) {
+      return false;
+    }
+    
+    return await SpO2Service.getInstance().stopSpo2(this.device);
   }
 
 }
