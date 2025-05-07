@@ -43,6 +43,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [syncProgress, setSyncProgress] = React.useState(0);
   const [currentService, setCurrentService] = React.useState('');
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const [deleteProgress, setDeleteProgress] = React.useState(0);
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const drawerRef = React.useRef<DrawerLayoutAndroid>(null);
 
@@ -124,6 +126,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   }, [device, bleService]);
 
 
+
+  const deleteAllHealthData = async () => {
+    if (!bleService) return;
+    
+    try {
+      setIsDeleting(true);
+      setDeleteProgress(0);
+      
+      const result = await bleService.deleteHealthData((progress) => {
+        console.log(`Tiến trình xóa dữ liệu: ${progress}%`);
+        setDeleteProgress(progress);
+      });
+      
+      setIsDeleting(false);
+      
+      if (result) {
+        alert('Đã xóa tất cả dữ liệu sức khỏe thành công');
+      } else {
+        alert('Có lỗi xảy ra khi xóa một số loại dữ liệu sức khỏe');
+      }
+    } catch (error) {
+      console.error('Lỗi khi xóa dữ liệu sức khỏe:', error);
+      alert('Đã xảy ra lỗi khi xóa dữ liệu sức khỏe');
+      setIsDeleting(false);
+    }
+  };
 
   const syncHealthData = async () => {
     if (!bleService) return;
@@ -272,6 +300,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                         }}>
                           <MaterialCommunityIcons name={"sync" as any} size={22} color="#FFF" />
                         </Animated.View>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.headerActionButton, {backgroundColor: '#FF8FAB'}]}
+                        onPress={deleteAllHealthData}
+                      >
+                        <MaterialCommunityIcons name={"delete" as any} size={22} color="#FFF" />
                       </TouchableOpacity>
 
                       <TouchableOpacity

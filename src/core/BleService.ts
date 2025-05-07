@@ -12,6 +12,7 @@ import HealthSyncService from '../services/BaseHealthService';
 import DeviceInfoService from '../services/DeviceInfoService';
 import SpO2Service from '../services/SpO2Service';
 import HeartRateService from '../services/HeartRateService';
+import DeleteHealthService from '../services/DeleteHealthService';
 
 // UUID của service và characteristics
 const SERVICE_UUID = 'be940000-7333-be46-b7ae-689e71722bd5';
@@ -392,6 +393,19 @@ class BleService {
     }
     
     return await HeartRateService.getInstance().stopHeartRate(this.device);
+  }
+  
+  /**
+   * Xóa tất cả lịch sử dữ liệu sức khỏe (tuần tự gọi 5 lệnh xóa, cách nhau 300ms)
+   * @param progressCallback Callback theo dõi tiến trình xóa (từ 0-100)
+   * @returns true nếu gửi tất cả lệnh thành công, false nếu có bất kỳ lỗi nào
+   */
+  public async deleteHealthData(progressCallback?: (progress: number) => void): Promise<boolean> {
+    if (!this.device || !this.isConnected) {
+      return false;
+    }
+    
+    return await DeleteHealthService.getInstance().deleteAllHealthData(this.device, progressCallback);
   }
 
   /**
