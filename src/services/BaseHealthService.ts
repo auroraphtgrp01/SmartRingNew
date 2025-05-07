@@ -79,31 +79,106 @@ export abstract class BaseHealthService<T> {
     }
   }
 
+  // Hàng đợi xử lý dữ liệu để tách biệt quá trình nhận và xử lý dữ liệu
+  private static dataProcessingQueue: Array<{data: Uint8Array, dataType: number}> = [];
+  private static isProcessingQueue: boolean = false;
+  
+  // Xử lý hàng đợi dữ liệu
+  private static processDataQueue(): void {
+    if (BaseHealthService.isProcessingQueue || BaseHealthService.dataProcessingQueue.length === 0) {
+      return;
+    }
+    
+    BaseHealthService.isProcessingQueue = true;
+    
+    // Lấy dữ liệu từ hàng đợi
+    const item = BaseHealthService.dataProcessingQueue.shift();
+    if (item) {
+      try {
+        // Xử lý dữ liệu
+        const unpackedData = unpackHealthData(item.data, item.dataType);
+        
+        // Xử lý và lưu trữ dữ liệu
+        const finalDataInstance = FinalDataService.getInstance();
+        const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
+        
+        // Định nghĩa các loại dữ liệu và cách xử lý tương ứng
+        const dataTypeMap: Record<number, { process: (data: Record<string, any>) => any, key: string }> = {
+          [Constants.DATA_TYPE.sleepHistory]: { 
+            process: (data) => finalDataInstance.getFinalSleepData(data), 
+            key: 'sleepHistory' 
+          },
+          [Constants.DATA_TYPE.sportHistory]: { 
+            process: (data) => finalDataInstance.getFinalSportData(data), 
+            key: 'sportHistory' 
+          },
+          [Constants.DATA_TYPE.heartHistory]: { 
+            process: (data) => finalDataInstance.getFinalHeartData(data), 
+            key: 'heartHistory' 
+          },
+          [Constants.DATA_TYPE.bloodPressureHistory]: { 
+            process: (data) => finalDataInstance.getFinalBloodPressureData(data), 
+            key: 'bloodPressureHistory' 
+          },
+          [Constants.DATA_TYPE.comprehensiveMeasurement]: { 
+            process: (data) => finalDataInstance.getFinalComprehensiveMeasurementData(data), 
+            key: 'comprehensiveMeasurement' 
+          }
+        };
+        
+        // Xử lý dữ liệu theo loại
+        const handler = dataTypeMap[item.dataType];
+        if (handler) {
+          const finalData = handler.process(unpackedData);
+          // Lưu dữ liệu vào bộ nhớ cục bộ
+          syncDataInstance.saveLocallyData(finalData, handler.key);
+        }
+      } catch (error) {
+        console.error(`Lỗi khi xử lý dữ liệu trong hàng đợi:`, error);
+      } finally {
+        // Đánh dấu đã xử lý xong và tiếp tục với dữ liệu tiếp theo
+        BaseHealthService.isProcessingQueue = false;
+        setTimeout(() => BaseHealthService.processDataQueue(), 0);
+      }
+    } else {
+      BaseHealthService.isProcessingQueue = false;
+    }
+  }
+  
   protected startDataTimeoutCheck(
     isReceivingData: boolean,
     dataPackets: Array<Buffer>,
     onMerge: (data: any) => any,
     logPrefix: string
   ): void {
+    // Nếu đã có timeout trước đó, hủy nó
     if (this.dataTimeoutId) {
       clearTimeout(this.dataTimeoutId);
     }
     
+    // Thời gian chờ ngắn hơn để xử lý dữ liệu nhanh hơn
+    // Nếu có gói dữ liệu mới đến, timeout sẽ được reset
     this.dataTimeoutId = setTimeout(() => {
       if (isReceivingData) {
         if (dataPackets.length > 0) {
-          // console.log(`Đã nhận ${dataPackets.length} gói dữ liệu ${logPrefix}, tiến hành ghép dữ liệu`);
-          
-          dataPackets.forEach((packet, index) => {
-            // console.log(`Độ dài: ${packet.length} bytes`);
-          });
-          
+          // Kết hợp tất cả các gói dữ liệu thành một buffer duy nhất
           const combinedData = Buffer.concat(dataPackets);
           const convertToUnit8 = new Uint8Array(combinedData);
-          // console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
-          onMerge(convertToUnit8);
+          
+          // Đánh dấu đã nhận xong dữ liệu
           this.isReceivingData = false;
-          this.handleUnpackData(convertToUnit8, this.dataType);
+          
+          // Gọi callback ngay lập tức để tiếp tục quy trình đồng bộ
+          onMerge(convertToUnit8);
+          
+          // Thêm dữ liệu vào hàng đợi xử lý thay vì xử lý ngay
+          BaseHealthService.dataProcessingQueue.push({
+            data: convertToUnit8,
+            dataType: this.dataType
+          });
+          
+          // Bắt đầu xử lý hàng đợi nếu chưa xử lý
+          setTimeout(() => BaseHealthService.processDataQueue(), 0);
         } else {
           // Trường hợp không có dữ liệu nhưng đã nhận được thông báo từ thiết bị
           console.log(`Không có dữ liệu ${logPrefix} để đồng bộ`);
@@ -111,44 +186,23 @@ export abstract class BaseHealthService<T> {
           this.isReceivingData = false;
         }
       }
-    }, 1500); 
+    }, 500); // Giảm thời gian timeout để xử lý nhanh hơn
   }
 
-  protected handleUnpackData(data: Uint8Array, dataType: number) {
-    const unpackedData = unpackHealthData(data, dataType);
-    this.handleMappingData(unpackedData, dataType);
+  // Phương thức này không còn được sử dụng trực tiếp
+  // Giữ lại để tương thích với các lớp con
+  protected handleUnpackData(data: Uint8Array, dataType: number): void {
+    // Không thực hiện xử lý dữ liệu ở đây nữa
+    // Tất cả xử lý dữ liệu được chuyển sang hàng đợi xử lý
+    console.log(`Phương thức handleUnpackData không còn được sử dụng trực tiếp`);
   }
 
-  protected handleMappingData(data: Record<string, any>, dataType: number) {
-    const finalDataInstance = FinalDataService.getInstance();
-    const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
-    switch (dataType) {
-      case Constants.DATA_TYPE.sleepHistory:
-        const finalSleepData = finalDataInstance.getFinalSleepData(data)
-        // console.log('Dữ liệu giấc ngủ:', finalSleepData);
-        syncDataInstance.saveLocallyData(finalSleepData, 'sleepHistory');
-        break;
-      case Constants.DATA_TYPE.sportHistory:
-        const finalSportData = finalDataInstance.getFinalSportData(data)
-        // console.log('Dữ liệu thể thao:', finalSportData);
-        syncDataInstance.saveLocallyData(finalSportData, 'sportHistory');
-        break;
-      case Constants.DATA_TYPE.heartHistory:
-        const finalHeartData = finalDataInstance.getFinalHeartData(data)
-        // console.log('Dữ liệu nhịp tim:', finalHeartData);
-        syncDataInstance.saveLocallyData(finalHeartData, 'heartHistory');
-        break;
-      case Constants.DATA_TYPE.bloodPressureHistory:
-        const finalBloodPressureData = finalDataInstance.getFinalBloodPressureData(data)
-        // console.log('Dữ liệu huyết áp:', finalBloodPressureData);
-        syncDataInstance.saveLocallyData(finalBloodPressureData, 'bloodPressureHistory');
-        break;
-      case Constants.DATA_TYPE.comprehensiveMeasurement:
-        const finalComprehensiveData = finalDataInstance.getFinalComprehensiveMeasurementData(data)
-        // console.log('Dữ liệu đo tổng hợp:', finalComprehensiveData);  
-        syncDataInstance.saveLocallyData(finalComprehensiveData, 'comprehensiveMeasurement');
-        break;
-    }
+  // Phương thức này không còn được sử dụng trực tiếp
+  // Giữ lại để tương thích với các lớp con
+  protected handleMappingData(data: Record<string, any>, dataType: number): void {
+    // Không thực hiện xử lý dữ liệu ở đây nữa
+    // Tất cả xử lý dữ liệu được chuyển sang hàng đợi xử lý
+    console.log(`Phương thức handleMappingData không còn được sử dụng trực tiếp`);
   }
 }
 
@@ -187,52 +241,108 @@ export class HealthSyncService {
         dataType: number;
         service: any;
         method: string;
+        priority: number; // Mức độ ưu tiên (số càng thấp càng ưu tiên cao)
       };
       
       const services: ServiceItem[] = [
-        { name: 'Nhịp tim', dataType: HeartHistoryService.DATATYPE, service: HeartHistoryService.getInstance(), method: 'getHeartData' },
-        { name: 'Giấc ngủ', dataType: SleepService.DATATYPE, service: SleepService.getInstance(), method: 'getSleepData' },
-        { name: 'Thể thao', dataType: SportService.DATATYPE, service: SportService.getInstance(), method: 'getSportData' },
-        { name: 'Huyết áp', dataType: BloodPressureService.DATATYPE, service: BloodPressureService.getInstance(), method: 'getBloodPressureData' },
-        { name: 'Đo tổng hợp', dataType: ComprehensiveService.DATATYPE, service: ComprehensiveService.getInstance(), method: 'getComprehensiveData' }
+        { name: 'Nhịp tim', dataType: HeartHistoryService.DATATYPE, service: HeartHistoryService.getInstance(), method: 'getHeartData', priority: 1 },
+        { name: 'Giấc ngủ', dataType: SleepService.DATATYPE, service: SleepService.getInstance(), method: 'getSleepData', priority: 2 },
+        { name: 'Thể thao', dataType: SportService.DATATYPE, service: SportService.getInstance(), method: 'getSportData', priority: 3 },
+        { name: 'Huyết áp', dataType: BloodPressureService.DATATYPE, service: BloodPressureService.getInstance(), method: 'getBloodPressureData', priority: 4 },
+        { name: 'Đo tổng hợp', dataType: ComprehensiveService.DATATYPE, service: ComprehensiveService.getInstance(), method: 'getComprehensiveData', priority: 5 }
       ];
       
-      // Đồng bộ tuần tự từng service
-      for (let i = 0; i < services.length; i++) {
-        const { name, dataType, service, method } = services[i];
-        const progress = Math.floor((i / services.length) * 100);
-        
+      // Sắp xếp lại theo thứ tự ưu tiên
+      services.sort((a, b) => a.priority - b.priority);
+      
+      // Thiết lập timeout tổng thể cho quá trình đồng bộ
+      const syncTimeout = setTimeout(() => {
+        console.log('Đã hết thời gian đồng bộ, tiến hành đồng bộ lên cloud');
         if (onProgress) {
-          onProgress(progress, name, dataType);
+          onProgress(100, 'Hoàn tất (timeout)', 0);
         }
-
-        // Đợi dữ liệu từ service hiện tại
-        await new Promise<void>((resolve) => {
-          (service as any)[method](device, (data: any) => {
-            console.log(`Đã đồng bộ dữ liệu ${name}`);
-            resolve();
-          });
-        });
         
-        // Đợi một khoảng thời gian trước khi gọi service tiếp theo
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Đợi thêm 1 giây để đảm bảo hàng đợi xử lý dữ liệu đã hoàn thành
+        setTimeout(() => {
+          const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
+          syncDataInstance.startSync(() => {
+            if(onComplete){
+              onComplete();
+            }
+          });
+        }, 1000);
+      }, 25000); // Giảm timeout tổng thể xuống 25 giây
+      
+      // Khởi tạo mảng để theo dõi các service đã hoàn thành
+      const completedServices = new Set<string>();
+      
+      // Tạo mảng promises cho tất cả các service
+      const servicePromises = services.map(({ name, dataType, service, method }, index) => {
+        return async () => {
+          const progress = Math.floor((index / services.length) * 100);
+          if (onProgress) {
+            onProgress(progress, name, dataType);
+          }
+          
+          try {
+            // Thiết lập timeout cho mỗi service
+            const servicePromise = new Promise<void>((resolve) => {
+              (service as any)[method](device, (data: any) => {
+                console.log(`Đã đồng bộ dữ liệu ${name}`);
+                completedServices.add(name);
+                resolve();
+              });
+            });
+            
+            // Đợi service hiện tại với timeout
+            const timeoutPromise = new Promise<void>((resolve) => {
+              setTimeout(() => {
+                console.log(`Hết thời gian chờ đồng bộ dữ liệu ${name}, chuyển sang dịch vụ tiếp theo`);
+                resolve();
+              }, 5000); // Giảm timeout xuống 5 giây cho mỗi service
+            });
+            
+            // Đợi service hoàn thành hoặc hết thời gian
+            await Promise.race([servicePromise, timeoutPromise]);
+          } catch (serviceError) {
+            console.error(`Lỗi khi đồng bộ dữ liệu ${name}:`, serviceError);
+          }
+        };
+      });
+      
+      // Thực hiện các service theo thứ tự ưu tiên, nhưng không chờ quá lâu
+      for (const servicePromise of servicePromises) {
+        await servicePromise();
+        // Chỉ đợi 100ms giữa các service để tăng tốc độ
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
+      // Hủy timeout tổng thể vì đã hoàn thành
+      clearTimeout(syncTimeout);
       
       if (onProgress) {
         onProgress(100, 'Hoàn tất', 0);
       }
       
-     
+      console.log(`Đã đồng bộ ${completedServices.size}/${services.length} dịch vụ`);
       
+      // Đợi thêm 500ms để đảm bảo hàng đợi xử lý dữ liệu đã hoàn thành
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Đồng bộ dữ liệu lên cloud
       const syncDataInstance = SyncHealthDataIntoCloud.getInstance();
       syncDataInstance.startSync(() => {
         if(onComplete){
           onComplete();
         }
       });
+      
       return true;
     } catch (error) {
       console.error('Lỗi khi đồng bộ dữ liệu sức khỏe:', error);
+      if (onComplete) {
+        onComplete();
+      }
       return false;
     }
   }

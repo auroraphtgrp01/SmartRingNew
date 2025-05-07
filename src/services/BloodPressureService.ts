@@ -77,8 +77,10 @@ export class BloodPressureService extends BaseHealthService<any[]> {
         this.dataPackets.push(payload);
         
         // Bắt đầu bộ đếm timeout để kiểm tra khi nào dữ liệu hoàn tất
+        // Sử dụng cơ chế hàng đợi xử lý dữ liệu mới, không đợi unpack
         this.startDataTimeoutCheck(this.isReceivingData, this.dataPackets, (data: any) => {
           if (this.dataCallback) {
+            // Gọi callback ngay để tiếp tục quy trình đồng bộ, không đợi unpack
             this.dataCallback(data);
           }
         }, 'huyết áp');
