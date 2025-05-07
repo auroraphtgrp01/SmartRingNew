@@ -59,7 +59,7 @@ const DeviceScanner: React.FC<DeviceScannerProps> = ({
         >
           <View style={styles.scanningContent}>
             <MaterialCommunityIcons name="bluetooth-off" size={18} color="white" style={styles.buttonIcon} />
-            <Text style={styles.buttonText}>Clear Connect</Text>
+            <Text style={styles.buttonText}>Ngắt kết nối</Text>
           </View>
         </TouchableOpacity>
       </View>

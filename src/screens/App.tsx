@@ -120,12 +120,16 @@ export default function App() {
 
   // Ngắt kết nối với thiết bị
   const disconnectFromDevice = async () => {
-    if (!connectedDevice) return;
-
     try {
-      await bleService.disconnectFromDevice();
+      // Sử dụng phương thức mới để ngắt kết nối tất cả thiết bị và reset trạng thái
+      await bleService.disconnectAllDevices();
+      
+      // Reset các state
       setConnectedDevice(null);
       setSleepData(null);
+      setDevices([]);
+      
+      console.log('Đã ngắt kết nối tất cả thiết bị Bluetooth và reset trạng thái');
     } catch (error) {
       console.error('Lỗi khi ngắt kết nối:', error);
       Alert.alert('Lỗi', 'Đã xảy ra lỗi khi ngắt kết nối thiết bị');

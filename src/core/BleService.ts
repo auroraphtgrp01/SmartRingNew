@@ -153,12 +153,15 @@ class BleService {
 
   // Ngắt kết nối với thiết bị
   public async disconnectFromDevice(): Promise<boolean> {
-    if (!this.device || !this.isConnected) return false;
-    
+    if (!this.device) return false;
+
     try {
       await this.device.cancelConnection();
-      this.isConnected = false;
       this.device = null;
+      this.isConnected = false;
+      if (this.connectionCallback) {
+        this.connectionCallback(false);
+      }
       return true;
     } catch (error) {
       console.error('Lỗi khi ngắt kết nối thiết bị:', error);
@@ -166,7 +169,38 @@ class BleService {
     }
   }
 
+  /**
+   * Ngắt kết nối tất cả thiết bị Bluetooth và reset trạng thái
+   * @returns true nếu thành công, false nếu có lỗi
+   */
+  public async disconnectAllDevices(): Promise<boolean> {
+    try {
+      // Ngắt kết nối thiết bị hiện tại nếu có
+      if (this.device) {
+        await this.device.cancelConnection();
+        this.device = null;
+        this.isConnected = false;
+        if (this.connectionCallback) {
+          this.connectionCallback(false);
+        }
+      }
 
+      // Dừng quét nếu đang quét
+      if (this.isScanningDevices) {
+        this.stopScan();
+      }
+
+      // Reset trạng thái của BleManager
+      this.bleManager.destroy();
+      this.bleManager = new BleManager();
+      
+      console.log('Đã ngắt kết nối tất cả thiết bị Bluetooth và reset trạng thái');
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi ngắt kết nối tất cả thiết bị:', error);
+      return false;
+    }
+  }
 
   /**
    * Bật lắng nghe thông báo từ các characteristic

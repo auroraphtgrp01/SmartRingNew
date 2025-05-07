@@ -44,6 +44,16 @@ export class ComprehensiveService extends BaseHealthService<any[]> {
       return;
     }
     
+    // Kiểm tra độ dài gói dữ liệu, nếu nhỏ hơn 9 byte thì trả về ngay
+    if (buffer.length < 9) {
+      console.log(`Gói dữ liệu quá ngắn (${buffer.length} bytes), trả về ngay`);
+      if (this.dataCallback && buffer[0] === 0x05 && buffer[1] === 0x09) {
+        console.log('Gọi callback trực tiếp cho gói dữ liệu đo tổng hợp ngắn');
+        this.dataCallback([]);
+      }
+      return;
+    }
+    
     // Xử lý dữ liệu từ characteristic lệnh (COMMAND_CHARACTERISTIC)
     if (characteristic.uuid.toLowerCase() === Constants.UUID.COMMAND_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói thông tin tổng hợp không (0x0509)

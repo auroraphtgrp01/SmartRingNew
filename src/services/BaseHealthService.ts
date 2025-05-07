@@ -90,19 +90,26 @@ export abstract class BaseHealthService<T> {
     }
     
     this.dataTimeoutId = setTimeout(() => {
-      if (isReceivingData && dataPackets.length > 0) {
-        // console.log(`Đã nhận ${dataPackets.length} gói dữ liệu ${logPrefix}, tiến hành ghép dữ liệu`);
-        
-        dataPackets.forEach((packet, index) => {
-          // console.log(`Độ dài: ${packet.length} bytes`);
-        });
-        
-        const combinedData = Buffer.concat(dataPackets);
-        const convertToUnit8 = new Uint8Array(combinedData);
-        // console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
-        onMerge(convertToUnit8);
-        this.isReceivingData = false;
-        this.handleUnpackData(convertToUnit8, this.dataType);
+      if (isReceivingData) {
+        if (dataPackets.length > 0) {
+          // console.log(`Đã nhận ${dataPackets.length} gói dữ liệu ${logPrefix}, tiến hành ghép dữ liệu`);
+          
+          dataPackets.forEach((packet, index) => {
+            // console.log(`Độ dài: ${packet.length} bytes`);
+          });
+          
+          const combinedData = Buffer.concat(dataPackets);
+          const convertToUnit8 = new Uint8Array(combinedData);
+          // console.log('Dữ liệu dạng Uint8Array:', convertToUnit8);
+          onMerge(convertToUnit8);
+          this.isReceivingData = false;
+          this.handleUnpackData(convertToUnit8, this.dataType);
+        } else {
+          // Trường hợp không có dữ liệu nhưng đã nhận được thông báo từ thiết bị
+          console.log(`Không có dữ liệu ${logPrefix} để đồng bộ`);
+          onMerge([]);
+          this.isReceivingData = false;
+        }
       }
     }, 1500); 
   }

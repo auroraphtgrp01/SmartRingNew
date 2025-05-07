@@ -42,12 +42,35 @@ export class SleepService extends BaseHealthService<any[]> {
       return;
     }
     
+    // Kiểm tra độ dài gói dữ liệu, nếu nhỏ hơn 9 byte thì trả về ngay
+    if (buffer.length < 9) {
+      console.log(`Gói dữ liệu quá ngắn (${buffer.length} bytes), trả về ngay`);
+      if (this.dataCallback && buffer[0] === 0x05 && buffer[1] === 0x04) {
+        console.log('Gọi callback trực tiếp cho gói dữ liệu giấc ngủ ngắn');
+        this.dataCallback([]);
+      }
+      return;
+    }
+    
     // Xử lý dữ liệu từ characteristic lệnh (COMMAND_CHARACTERISTIC)
     if (characteristic.uuid.toLowerCase() === Constants.UUID.COMMAND_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói thông tin giấc ngủ không (0x0504)
       if (buffer[0] === 0x05 && buffer[1] === 0x04) {
+        console.log(`Nhận gói dữ liệu giấc ngủ: ${Buffer.from(buffer).toString('hex')}`);
         this.isReceivingData = true;
         this.dataPackets = [];
+        
+        // Kiểm tra xem có dữ liệu hay không (dựa vào byte thứ 3 và 4)
+        const dataLength = (buffer[2] << 8) + buffer[3];
+        if (dataLength === 0) {
+          console.log('Không có dữ liệu giấc ngủ để đồng bộ');
+          // Gọi callback trực tiếp khi không có dữ liệu
+          if (this.dataCallback) {
+            console.log('Gọi callback trực tiếp cho dữ liệu giấc ngủ trống');
+            this.dataCallback([]);
+          }
+          this.isReceivingData = false;
+        }
       }
     }
     
@@ -55,7 +78,8 @@ export class SleepService extends BaseHealthService<any[]> {
     else if (characteristic.uuid.toLowerCase() === Constants.UUID.DATA_CHARACTERISTIC_UUID.toLowerCase()) {
       // Kiểm tra xem có phải gói dữ liệu giấc ngủ không (0x0513)
       if (buffer[0] === 0x05 && buffer[1] === 0x13 && this.isReceivingData) {
-      
+        console.log('Nhận được gói dữ liệu giấc ngủ');
+        
         // Lấy độ dài gói
         const length = (buffer[2] << 8) + buffer[3];
         
