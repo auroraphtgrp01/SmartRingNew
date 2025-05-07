@@ -3,23 +3,47 @@ import { Buffer } from 'buffer';
 import { ByteService } from '../core/ByteService';
 import { Constants } from '../constants';
 import { unpackDeviceInfoData } from '../core/UnpackData';
+import { useDeviceInfo } from '../contexts/DeviceInfoContext';
+import { useEffect } from 'react';
+
+let _deviceInfoDataSetter: ((data: any) => void) | null = null;
+let _deviceInfoData: any = null;
+
+export const ContextConnectorDeviceInfo: React.FC = () => {
+  const { deviceInfo, updateDeviceInfo } = useDeviceInfo();
+  
+  useEffect(() => {
+    _deviceInfoDataSetter = updateDeviceInfo;
+    _deviceInfoData = deviceInfo;
+    
+    return () => {
+      _deviceInfoDataSetter = null;
+    };
+  }, [deviceInfo, updateDeviceInfo]);
+  
+  return null;
+};
 
 export class DeviceInfoService {
   private static instance: DeviceInfoService;
   public deviceInfo: {
     deviceBatteryState: number
     deviceBatteryValue: number
-    deviceMainVersion: string
-    deviceSubVersion: string
+    deviceMainVersion: number
+    deviceSubVersion: number
     deviceVersion: string
-    deviceId: string
+    deviceId: number
+    devicetBindState: number
+    devicetSyncState: number
   } = {
     deviceBatteryState: 0,
     deviceBatteryValue: 0,
-    deviceMainVersion: '',
-    deviceSubVersion: '',
+    deviceMainVersion: 0,
+    deviceSubVersion: 0,
     deviceVersion: '',
-    deviceId: '',
+    deviceId: 0,
+    devicetBindState: 0,
+    devicetSyncState: 0
   }
   private constructor() {}
   
@@ -59,8 +83,6 @@ export class DeviceInfoService {
       // Chuyển đổi Uint8Array thành Buffer
       const deviceInfoCommand = Buffer.from(Constants.COMMAND_BYTE.GET_DEVICE_INFO);
       
-      // Gửi lệnh lấy thông tin thiết bị
-      // Lưu ý: Lệnh này không cần tính CRC vì đã có sẵn trong Constants
       await device.writeCharacteristicWithResponseForService(
         Constants.UUID.SERVICE_UUID,
         Constants.UUID.COMMAND_CHARACTERISTIC_UUID,
@@ -119,14 +141,25 @@ export class DeviceInfoService {
       const unpackDeviceInfo = unpackDeviceInfoData(convertToUnit8)
       console.log(convertToUnit8)
       console.log("UNPACK: ", unpackDeviceInfo)
+      
+      if (!unpackDeviceInfo.data) {
+        console.error('Không có dữ liệu thiết bị trong kết quả unpack');
+        return null;
+      }
       this.deviceInfo = {
-        deviceBatteryState: unpackDeviceInfo.deviceBatteryState,
-        deviceBatteryValue: unpackDeviceInfo.deviceBatteryValue,
-        deviceMainVersion: unpackDeviceInfo.deviceMainVersion,
-        deviceSubVersion: unpackDeviceInfo.deviceSubVersion,
-        deviceVersion: unpackDeviceInfo.deviceVersion,
-        deviceId: unpackDeviceInfo.deviceId,
-        }
+        deviceBatteryState: unpackDeviceInfo.data.deviceBatteryState,
+        deviceBatteryValue: unpackDeviceInfo.data.deviceBatteryValue,
+        deviceMainVersion: unpackDeviceInfo.data.deviceMainVersion,
+        deviceSubVersion: unpackDeviceInfo.data.deviceSubVersion,
+        deviceVersion: unpackDeviceInfo.data.deviceVersion,
+        deviceId: unpackDeviceInfo.data.deviceId,
+        devicetBindState: unpackDeviceInfo.data.devicetBindState,
+        devicetSyncState: unpackDeviceInfo.data.devicetSyncState
+      }
+      if(_deviceInfoDataSetter) {
+        _deviceInfoDataSetter(this.deviceInfo);
+      }
+      _deviceInfoData = this.deviceInfo;
     } catch (error) {
       console.error('Lỗi khi phân tích dữ liệu thông tin thiết bị:', error);
       return {

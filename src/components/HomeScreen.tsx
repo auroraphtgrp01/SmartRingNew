@@ -1,20 +1,22 @@
-import React, { useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  Image, 
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
   SafeAreaView,
   Modal,
   Animated,
   Easing,
-  Dimensions
+  Dimensions,
+  DrawerLayoutAndroid
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Device } from 'react-native-ble-plx';
 import BleService from '../core/BleService';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useDeviceInfo } from '../contexts/DeviceInfoContext';
 import { useBloodPressureHistory, useComprehensiveHistory, useHeartHistory, useSleepHistory, useSportHistory } from '../contexts';
 
 interface HomeScreenProps {
@@ -28,12 +30,12 @@ interface HomeScreenProps {
   onConnect?: () => void;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ 
-  device, 
-  onNavigateToHeartRate, 
-  onNavigateToSpO2, 
-  onNavigateToSleepStats, 
-  onNavigateToHealthStats, 
+const HomeScreen: React.FC<HomeScreenProps> = ({
+  device,
+  onNavigateToHeartRate,
+  onNavigateToSpO2,
+  onNavigateToSleepStats,
+  onNavigateToHealthStats,
   onDisconnect,
   bleService,
   onConnect
@@ -41,23 +43,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [syncProgress, setSyncProgress] = React.useState(0);
   const [currentService, setCurrentService] = React.useState('');
-  
-  const {sleepHistoryData} = useSleepHistory()
-  const {bloodPressureHistoryData} = useBloodPressureHistory()
-  const {heartHistoryData} = useHeartHistory()
-  const {sportHistoryData} = useSportHistory()
-  const {comprehensiveHistoryData} = useComprehensiveHistory()
+  const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const drawerRef = React.useRef<DrawerLayoutAndroid>(null);
+
+  // Sử dụng DeviceInfoContext để lấy thông tin thiết bị
+
+  const { sleepHistoryData } = useSleepHistory()
+  const { bloodPressureHistoryData } = useBloodPressureHistory()
+  const { heartHistoryData } = useHeartHistory()
+  const { sportHistoryData } = useSportHistory()
+  const { comprehensiveHistoryData } = useComprehensiveHistory()
+  const { deviceInfo, updateDeviceInfo } = useDeviceInfo();
 
   // Animation cho hiệu ứng pulse
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
-  
+
   // Animation cho hiệu ứng rotate
   const rotateAnim = React.useRef(new Animated.Value(0)).current;
   const rotateInterpolate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg']
   });
-  
+
+  useEffect(() => {
+    console.log(">>>>>", deviceInfo)
+  }, [deviceInfo])
+
   // Bắt đầu animation khi đang đồng bộ
   React.useEffect(() => {
     if (isSyncing) {
@@ -78,7 +89,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           })
         ])
       ).start();
-      
+
       // Hiệu ứng quay
       Animated.loop(
         Animated.timing(rotateAnim, {
@@ -97,14 +108,31 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   }, [isSyncing]);
 
+  // Lấy thông tin thiết bị khi kết nối
+  React.useEffect(() => {
+    if (device && bleService) {
+      // Cập nhật thông tin thiết bị ngay khi kết nối
+      updateDeviceInfo();
+
+      // Cập nhật thông tin thiết bị định kỳ mỗi 30 giây
+      const intervalId = setInterval(() => {
+        updateDeviceInfo();
+      }, 30000);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [device, bleService]);
+
+
+
   const syncHealthData = async () => {
     if (!bleService) return;
-    
+
     try {
       setIsSyncing(true);
       setSyncProgress(0);
       setCurrentService('');
-      
+
       await bleService.syncHealthData((progress, service) => {
         console.log(`Đồng bộ dữ liệu: ${progress}% - ${service}`);
         setSyncProgress(progress);
@@ -121,7 +149,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   // Chuyển đổi tên service thành tiếng Việt
   const getServiceName = (serviceName: string) => {
-    switch(serviceName) {
+    switch (serviceName) {
       case 'sportHistory':
         return 'Dữ liệu thể thao';
       case 'sleepHistory':
@@ -137,182 +165,280 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
+  // Nội dung drawer hiển thị thông tin thiết bị
+  const renderDeviceInfoDrawer = () => (
+    <View style={styles.drawerContainer}>
+      <View style={styles.drawerHeader}>
+        <Text style={styles.drawerTitle}>Thông tin thiết bị</Text>
+        <TouchableOpacity
+          onPress={() => {
+            if (drawerRef.current) {
+              drawerRef.current.closeDrawer();
+              setDrawerOpen(false);
+            }
+          }}
+        >
+          <MaterialCommunityIcons name="close" size={24} color="#333" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.deviceInfoList}>
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Phiên bản:</Text>
+          <Text style={styles.deviceInfoValue}>{deviceInfo.deviceVersion}</Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>ID thiết bị:</Text>
+          <Text style={styles.deviceInfoValue}>{deviceInfo.deviceId}</Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Phiên bản chính:</Text>
+          <Text style={styles.deviceInfoValue}>{deviceInfo.deviceMainVersion}</Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Phiên bản phụ:</Text>
+          <Text style={styles.deviceInfoValue}>{deviceInfo.deviceSubVersion}</Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Trạng thái pin:</Text>
+          <Text style={styles.deviceInfoValue}>
+            {deviceInfo.deviceBatteryState === 0 ? 'Không sạc' : 'Đang sạc'}
+          </Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Mức pin:</Text>
+          <Text style={styles.deviceInfoValue}>{deviceInfo.deviceBatteryValue}%</Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Trạng thái liên kết:</Text>
+          <Text style={styles.deviceInfoValue}>
+            {deviceInfo.devicetBindState === 0 ? 'Chưa liên kết' : 'Đã liên kết'}
+          </Text>
+        </View>
+
+        <View style={styles.deviceInfoItem}>
+          <Text style={styles.deviceInfoLabel}>Trạng thái đồng bộ:</Text>
+          <Text style={styles.deviceInfoValue}>
+            {deviceInfo.devicetSyncState === 0 ? 'Chưa đồng bộ' : 'Đã đồng bộ'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerContainer}>
-          <View style={styles.headerGradient}>
-            <View style={styles.headerContent}>
-              <View style={styles.deviceInfoContainer}>
-                <View style={styles.ringIconContainer}>
-                  <View style={styles.ringOuterCircle}>
-                    <View style={styles.ringInnerCircle}>
-                      <MaterialCommunityIcons name={"ring" as any} size={24} color="#FB6F92" />
+    <DrawerLayoutAndroid
+      ref={drawerRef}
+      drawerWidth={300}
+      drawerPosition="right"
+      renderNavigationView={renderDeviceInfoDrawer}
+      onDrawerClose={() => setDrawerOpen(false)}
+    >
+      <SafeAreaView style={styles.container}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.headerContainer}>
+            <View style={styles.headerGradient}>
+              <View style={styles.headerContent}>
+                <View style={styles.deviceInfoContainer}>
+                  <View style={styles.ringIconContainer}>
+                    <View style={styles.ringOuterCircle}>
+                      <View style={styles.ringInnerCircle}>
+                        <MaterialCommunityIcons name={"ring" as any} size={24} color="#FB6F92" />
+                      </View>
                     </View>
                   </View>
+                  <View style={styles.deviceTextContainer}>
+                    <Text style={styles.welcomeText}>Xin chào,</Text>
+                    <Text style={styles.deviceNameText}>{device ? (device.name || "Smart Ring") : "Smart Ring"}</Text>
+                  </View>
                 </View>
-                <View style={styles.deviceTextContainer}>
-                  <Text style={styles.welcomeText}>Xin chào,</Text>
-                  <Text style={styles.deviceNameText}>{device ? (device.name || "Smart Ring") : "Smart Ring"}</Text>
+
+                <View style={styles.headerActionsContainer}>
+                  {device && bleService ? (
+                    <>
+                      <TouchableOpacity
+                        style={styles.headerActionButton}
+                        onPress={syncHealthData}
+                      >
+                        <Animated.View style={{
+                          transform: [{ rotate: rotateInterpolate }],
+                          opacity: isSyncing ? 1 : 0.8
+                        }}>
+                          <MaterialCommunityIcons name={"sync" as any} size={22} color="#FFF" />
+                        </Animated.View>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.headerActionButton, styles.disconnectButton]}
+                        onPress={onDisconnect}
+                      >
+                        <MaterialCommunityIcons name={"bluetooth-off" as any} size={22} color="#FFF" />
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.headerActionButton}
+                      onPress={onConnect}
+                    >
+                      <MaterialCommunityIcons name={"bluetooth-connect" as any} size={22} color="#FFF" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
 
-              <View style={styles.headerActionsContainer}>
-                {device && bleService ? (
-                  <>
-                    <TouchableOpacity 
-                      style={styles.headerActionButton}
-                      onPress={syncHealthData}
-                    >
-                      <Animated.View style={{
-                        transform: [{ rotate: rotateInterpolate }],
-                        opacity: isSyncing ? 1 : 0.8
-                      }}>
-                        <MaterialCommunityIcons name={"sync" as any} size={22} color="#FFF" />
-                      </Animated.View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                      style={[styles.headerActionButton, styles.disconnectButton]}
-                      onPress={onDisconnect}
-                    >
-                      <MaterialCommunityIcons name={"bluetooth-off" as any} size={22} color="#FFF" />
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <TouchableOpacity 
-                    style={styles.headerActionButton}
-                    onPress={onConnect}
+              <View style={styles.connectionStatusBar}>
+                <View style={styles.connectionStatusIndicator}>
+                  {device ? (
+                    <>
+                      <View style={styles.pulsingDot}>
+                        <Animated.View
+                          style={[
+                            styles.pulsingDotInner,
+                            { transform: [{ scale: pulseAnim }] }
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.connectionStatusText}>Đã kết nối và hoạt động tốt</Text>
+                    </>
+                  ) : (
+                    <>
+                      <View style={[styles.pulsingDot, styles.disconnectedDot]}>
+                        <View style={[styles.pulsingDotInner, styles.disconnectedDotInner]} />
+                      </View>
+                      <Text style={styles.disconnectedStatusText}>Chưa kết nối thiết bị</Text>
+                    </>
+                  )}
+                </View>
+                {device && (
+                  <TouchableOpacity
+                    style={styles.batteryContainer}
+                    onPress={() => {
+                      if (drawerRef.current) {
+                        // Lấy thông tin mới nhất trước khi mở drawer
+                        updateDeviceInfo();
+                        drawerRef.current.openDrawer();
+                        setDrawerOpen(true);
+                      }
+                    }}
                   >
-                    <MaterialCommunityIcons name={"bluetooth-connect" as any} size={22} color="#FFF" />
+                    <MaterialCommunityIcons
+                      name={deviceInfo.deviceBatteryValue > 80 ? "battery" :
+                        deviceInfo.deviceBatteryValue > 30 ? "battery-50" :
+                          "battery-20"}
+                      size={16}
+                      color={deviceInfo.deviceBatteryValue > 20 ? "#52C41A" : "#F5222D"}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text style={[styles.batteryStatusText, {
+                      color: deviceInfo.deviceBatteryValue > 20 ? "#52C41A" : "#F5222D"
+                    }]}>Pin: {deviceInfo.deviceBatteryValue}%</Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
+          </View>
+          {!device ? (
+            <View style={styles.connectDeviceCard}>
+              <MaterialCommunityIcons name="bluetooth-off" size={60} color="#91D5FF" style={styles.connectIcon} />
 
-            <View style={styles.connectionStatusBar}>
-              <View style={styles.connectionStatusIndicator}>
-                {device ? (
-                  <>
-                    <View style={styles.pulsingDot}>
-                      <Animated.View 
-                        style={[
-                          styles.pulsingDotInner,
-                          { transform: [{ scale: pulseAnim }] }
-                        ]}
-                      />
-                    </View>
-                    <Text style={styles.connectionStatusText}>Đã kết nối và hoạt động tốt</Text>
-                  </>
-                ) : (
-                  <>
-                    <View style={[styles.pulsingDot, styles.disconnectedDot]}>
-                      <View style={[styles.pulsingDotInner, styles.disconnectedDotInner]} />
-                    </View>
-                    <Text style={styles.disconnectedStatusText}>Chưa kết nối thiết bị</Text>
-                  </>
-                )}
-              </View>
-              {device && <Text style={styles.batteryStatusText}>Pin: 85%</Text>}
-            </View>
-          </View>
-        </View>
-        {!device ? (
-          <View style={styles.connectDeviceCard}>
-            <MaterialCommunityIcons name="bluetooth-off" size={60} color="#91D5FF" style={styles.connectIcon} />
-            
-            <Text style={styles.connectTitle}>Chưa có thiết bị nào được kết nối</Text>
-            <Text style={styles.connectDescription}>
-              Kết nối với SmartRing của bạn để theo dõi sức khỏe và giấc ngủ
-            </Text>
-            
-            <TouchableOpacity 
-              style={styles.connectButton} 
-              onPress={() => {
-                console.log('Nút kết nối trong HomeScreen được bấm');
-                console.log('onConnect có tồn tại:', !!onConnect);
-                // Gọi hàm onConnect trực tiếp nếu nó tồn tại
-                if (onConnect) {
-                  onConnect();
-                }
-              }}
-            >
-              <MaterialCommunityIcons name="bluetooth-connect" size={24} color="white" />
-              <Text style={styles.connectButtonText}>Kết nối thiết bị</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <>
-            <TouchableOpacity 
-              style={styles.sleepSummaryCard}
-              onPress={onNavigateToSleepStats}
-            >
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleContainer}>
-              <MaterialCommunityIcons name={"sleep" as any} size={22} color="#6979F8" />
-              <Text style={styles.cardTitle}>Giấc ngủ đêm qua</Text>
-            </View>
-            <TouchableOpacity onPress={onNavigateToSleepStats}>
-              <Text style={styles.detailsLink}>Chi tiết</Text>
-            </TouchableOpacity>
-          </View>
+              <Text style={styles.connectTitle}>Chưa có thiết bị nào được kết nối</Text>
+              <Text style={styles.connectDescription}>
+                Kết nối với SmartRing của bạn để theo dõi sức khỏe và giấc ngủ
+              </Text>
 
-              <View style={styles.sleepTimeContainer}>
-                <Text style={styles.sleepTime}>
-                  {sleepHistoryData && sleepHistoryData.overview 
-                    ? (() => {
+              <TouchableOpacity
+                style={styles.connectButton}
+                onPress={() => {
+                  console.log('Nút kết nối trong HomeScreen được bấm');
+                  console.log('onConnect có tồn tại:', !!onConnect);
+                  // Gọi hàm onConnect trực tiếp nếu nó tồn tại
+                  if (onConnect) {
+                    onConnect();
+                  }
+                }}
+              >
+                <MaterialCommunityIcons name="bluetooth-connect" size={24} color="white" />
+                <Text style={styles.connectButtonText}>Kết nối thiết bị</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.sleepSummaryCard}
+                onPress={onNavigateToSleepStats}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardTitleContainer}>
+                    <MaterialCommunityIcons name={"sleep" as any} size={22} color="#6979F8" />
+                    <Text style={styles.cardTitle}>Giấc ngủ đêm qua</Text>
+                  </View>
+                  <TouchableOpacity onPress={onNavigateToSleepStats}>
+                    <Text style={styles.detailsLink}>Chi tiết</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.sleepTimeContainer}>
+                  <Text style={styles.sleepTime}>
+                    {sleepHistoryData && sleepHistoryData.overview
+                      ? (() => {
                         const totalMinutes = sleepHistoryData.overview.totalSleepTime;
                         const hours = Math.floor(totalMinutes / 60);
                         const minutes = Math.round(totalMinutes % 60);
                         return `${hours} giờ ${minutes} phút`;
                       })()
-                    : '--- giờ --- phút'}
-                </Text>
-                <View style={styles.sleepQuality}>
-                  <View style={styles.qualityDot} />
-                  <Text style={styles.qualityText}>
-                    {sleepHistoryData && sleepHistoryData.overview 
-                      ? (() => {
+                      : '--- giờ --- phút'}
+                  </Text>
+                  <View style={styles.sleepQuality}>
+                    <View style={styles.qualityDot} />
+                    <Text style={styles.qualityText}>
+                      {sleepHistoryData && sleepHistoryData.overview
+                        ? (() => {
                           const totalMinutes = sleepHistoryData.overview.totalSleepTime;
                           if (totalMinutes >= 420) return 'Tốt';
                           else if (totalMinutes >= 360) return 'Bình thường';
                           else return 'Kém';
                         })()
-                      : 'N/A'}
-                  </Text>
+                        : 'N/A'}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.sleepStagesBar}>
-                {sleepHistoryData && sleepHistoryData.overview 
-                  ? (() => {
+                <View style={styles.sleepStagesBar}>
+                  {sleepHistoryData && sleepHistoryData.overview
+                    ? (() => {
                       const lightSleepFlex = sleepHistoryData.overview.totalLightSleep || 0;
                       const deepSleepFlex = sleepHistoryData.overview.totalDeepSleep || 0;
                       const remSleepFlex = sleepHistoryData.overview.totalREM || 0;
                       const awakeFlex = sleepHistoryData.overview.wakeupCount || 0;
-                      
+
                       // Đảm bảo có ít nhất một giá trị để hiển thị
                       const totalFlex = lightSleepFlex + deepSleepFlex + remSleepFlex + awakeFlex;
-                      
+
                       return (
                         <>
                           {totalFlex > 0 ? (
                             <>
-                              <View style={[styles.sleepStage, { 
-                                flex: lightSleepFlex > 0 ? lightSleepFlex : 0.1, 
-                                backgroundColor: '#36CFC9' 
+                              <View style={[styles.sleepStage, {
+                                flex: lightSleepFlex > 0 ? lightSleepFlex : 0.1,
+                                backgroundColor: '#36CFC9'
                               }]} />
-                              <View style={[styles.sleepStage, { 
-                                flex: deepSleepFlex > 0 ? deepSleepFlex : 0.1, 
-                                backgroundColor: '#6979F8' 
+                              <View style={[styles.sleepStage, {
+                                flex: deepSleepFlex > 0 ? deepSleepFlex : 0.1,
+                                backgroundColor: '#6979F8'
                               }]} />
-                              <View style={[styles.sleepStage, { 
-                                flex: remSleepFlex > 0 ? remSleepFlex : 0.1, 
-                                backgroundColor: '#FFB980' 
+                              <View style={[styles.sleepStage, {
+                                flex: remSleepFlex > 0 ? remSleepFlex : 0.1,
+                                backgroundColor: '#FFB980'
                               }]} />
-                              <View style={[styles.sleepStage, { 
-                                flex: awakeFlex > 0 ? awakeFlex : 0.1, 
-                                backgroundColor: '#D9D9D9' 
+                              <View style={[styles.sleepStage, {
+                                flex: awakeFlex > 0 ? awakeFlex : 0.1,
+                                backgroundColor: '#D9D9D9'
                               }]} />
                             </>
                           ) : (
@@ -323,376 +449,377 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                         </>
                       );
                     })()
-                  : <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
-                }
-              </View>
-              
-              <View style={styles.sleepLegend}>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#36CFC9' }]} />
-                  <Text style={styles.legendText}>Ngủ nhẹ</Text>
+                    : <View style={[styles.sleepStage, { flex: 1, backgroundColor: '#E5E5E5' }]} />
+                  }
                 </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#6979F8' }]} />
-                  <Text style={styles.legendText}>Ngủ sâu</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#FFB980' }]} />
-                  <Text style={styles.legendText}>REM</Text>
-                </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendDot, { backgroundColor: '#D9D9D9' }]} />
-                  <Text style={styles.legendText}>Thức</Text>
-                </View>
-              </View>
-            </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.healthSummaryHeader}
-              onPress={onNavigateToHealthStats}
-            >
-              <View style={styles.healthSummaryTitleContainer}>
-                <MaterialCommunityIcons name="heart-pulse" size={22} color="#FB6F92" style={styles.healthSummaryIcon} />
-                <Text style={styles.healthSummaryTitle}>Tổng quan sức khỏe</Text>
-              </View>
-              <View style={styles.healthSummaryViewAll}>
-                <Text style={styles.healthSummaryViewAllText}>Xem tất cả</Text>
-                <View style={styles.healthSummaryArrowContainer}>
-                  <MaterialCommunityIcons name="chevron-right" size={16} color="#FFF" />
+                <View style={styles.sleepLegend}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#36CFC9' }]} />
+                    <Text style={styles.legendText}>Ngủ nhẹ</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#6979F8' }]} />
+                    <Text style={styles.legendText}>Ngủ sâu</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#FFB980' }]} />
+                    <Text style={styles.legendText}>REM</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendDot, { backgroundColor: '#D9D9D9' }]} />
+                    <Text style={styles.legendText}>Thức</Text>
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-
-        <View style={styles.healthMetricsContainer}>
-          <TouchableOpacity 
-            style={styles.healthMetricCard}
-            onPress={onNavigateToHeartRate}
-          >
-            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF0F6' }]}>
-              <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#FB6F92" />
-            </View>
-            <View style={styles.healthMetricContent}>
-              <Text style={styles.healthMetricTitle}>Nhịp tim</Text>
-              <Text style={styles.healthMetricValue}>
-                {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 
-                  ? heartHistoryData.data[heartHistoryData.data.length - 1].heartValue 
-                  : '---'} <Text style={styles.healthMetricUnit}>BPM</Text>
-              </Text>
-              <View style={styles.healthMetricStatusContainer}>
-                {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 && 
-                  (() => {
-                    const heartRate = heartHistoryData.data[heartHistoryData.data.length - 1].heartValue;
-                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
-                    let statusText = 'Bình thường';
-                    
-                    if (heartRate < 60) {
-                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
-                      statusText = 'Thấp';
-                    } else if (heartRate > 100) {
-                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
-                      statusText = 'Cao';
-                    }
-                    
-                    return (
-                      <>
-                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
-                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
-                      </>
-                    );
-                  })()
-                }
-                {(!heartHistoryData || !heartHistoryData.data || heartHistoryData.data.length === 0) && (
-                  <Text style={styles.healthMetricStatusText}>N/A</Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.healthMetricCard}
-            onPress={onNavigateToSpO2}
-          >
-            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#F6FFED' }]}>
-              <MaterialCommunityIcons name={"water-percent" as any} size={22} color="#95DE64" />
-            </View>
-            <View style={styles.healthMetricContent}>
-              <Text style={styles.healthMetricTitle}>SpO2</Text>
-              <Text style={styles.healthMetricValue}>
-                {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 
-                  ? comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue 
-                  : '---'} <Text style={styles.healthMetricUnit}>%</Text>
-              </Text>
-              <View style={styles.healthMetricStatusContainer}>
-                {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 && 
-                  (() => {
-                    const spo2 = comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue;
-                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái tốt
-                    let statusText = 'Tốt';
-                    
-                    if (spo2 < 90) {
-                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái thấp
-                      statusText = 'Thấp';
-                    } else if (spo2 < 95) {
-                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái bình thường
-                      statusText = 'Bình thường';
-                    }
-                    
-                    return (
-                      <>
-                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
-                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
-                      </>
-                    );
-                  })()
-                }
-                {(!comprehensiveHistoryData || !comprehensiveHistoryData.data || comprehensiveHistoryData.data.length === 0) && (
-                  <Text style={styles.healthMetricStatusText}>N/A</Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.healthMetricCard}
-            onPress={onNavigateToHealthStats}
-          >
-            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#E6F7FF' }]}>
-              <MaterialCommunityIcons name={"shoe-print" as any} size={22} color="#40A9FF" />
-            </View>
-            <View style={styles.healthMetricContent}>
-              <Text style={styles.healthMetricTitle}>Bước chân</Text>
-              <Text style={styles.healthMetricValue}>
-                {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 
-                  ? sportHistoryData.data[sportHistoryData.data.length - 1].sportStep.toLocaleString('vi-VN')
-                  : '---'}
-              </Text>
-              <View style={styles.healthMetricProgressContainer}>
-                {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 && (
-                  <>
-                    <View style={styles.healthMetricProgressBar}>
-                      <View 
-                        style={[
-                          styles.healthMetricProgressFill, 
-                          { 
-                            width: `${Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}%`,
-                            backgroundColor: '#40A9FF'
-                          }
-                        ]} 
-                      />
-                    </View>
-                    <Text style={styles.healthMetricProgressText}>
-                      {Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}%
-                    </Text>
-                  </>
-                )}
-                {(!sportHistoryData || !sportHistoryData.data || sportHistoryData.data.length === 0) && (
-                  <Text style={styles.healthMetricStatusText}>N/A</Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.healthMetricCard}
-            onPress={onNavigateToHealthStats}
-          >
-            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF7CD' }]}>
-              <MaterialCommunityIcons name={"heart-flash" as any} size={22} color="#FFC53D" />
-            </View>
-            <View style={styles.healthMetricContent}>
-              <Text style={styles.healthMetricTitle}>Huyết Áp</Text>
-              <Text style={styles.healthMetricValue}>
-                {bloodPressureHistoryData && bloodPressureHistoryData.historyData && bloodPressureHistoryData.historyData.length > 0 
-                  ? `${bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodSBP}/${bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodDBP}`
-                  : '---'} <Text style={styles.healthMetricUnit}>mmHg</Text>
-              </Text>
-              <View style={styles.healthMetricStatusContainer}>
-                {bloodPressureHistoryData && bloodPressureHistoryData.historyData && bloodPressureHistoryData.historyData.length > 0 && 
-                  (() => {
-                    const systolic = bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodSBP;
-                    const diastolic = bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodDBP;
-                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
-                    let statusText = 'Bình thường';
-                    
-                    if (systolic > 140 || diastolic > 90) {
-                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
-                      statusText = 'Cao';
-                    } else if (systolic < 90 || diastolic < 60) {
-                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
-                      statusText = 'Thấp';
-                    }
-                    
-                    return (
-                      <>
-                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
-                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
-                      </>
-                    );
-                  })()
-                }
-                {(!bloodPressureHistoryData || !bloodPressureHistoryData.historyData || bloodPressureHistoryData.historyData.length === 0) && (
-                  <Text style={styles.healthMetricStatusText}>N/A</Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.healthMetricCard}
-            onPress={onNavigateToHealthStats}
-          >
-            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFE8F7' }]}>
-              <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#F759AB" />
-            </View>
-            <View style={styles.healthMetricContent}>
-              <Text style={styles.healthMetricTitle}>Biến thiên nhịp tim</Text>
-              <Text style={styles.healthMetricValue}>
-                {comprehensiveHistoryData && comprehensiveHistoryData.overview 
-                  ? comprehensiveHistoryData.overview.hrvValueAvg
-                  : '---'} <Text style={styles.healthMetricUnit}>ms</Text>
-              </Text>
-              <View style={styles.healthMetricStatusContainer}>
-                {comprehensiveHistoryData && comprehensiveHistoryData.overview && 
-                  (() => {
-                    const hrvValue = comprehensiveHistoryData.overview.hrvValueAvg;
-                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái tốt
-                    let statusText = 'Tốt';
-                    
-                    if (hrvValue < 30) {
-                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái thấp
-                      statusText = 'Thấp';
-                    } else if (hrvValue < 50) {
-                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái trung bình
-                      statusText = 'Trung bình';
-                    }
-                    
-                    return (
-                      <>
-                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
-                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
-                      </>
-                    );
-                  })()
-                }
-                {(!comprehensiveHistoryData || !comprehensiveHistoryData.overview) && (
-                  <Text style={styles.healthMetricStatusText}>N/A</Text>
-                )}
-              </View>
-            </View>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.healthMetricCard}
-            onPress={onNavigateToHealthStats}
-          >
-            <View style={[styles.healthMetricIconContainer, { backgroundColor: '#D9F7BE' }]}>
-              <MaterialCommunityIcons name={"lungs" as any} size={22} color="#73D13D" />
-            </View>
-            <View style={styles.healthMetricContent}>
-              <Text style={styles.healthMetricTitle}>Tần số hô hấp</Text>
-              <Text style={styles.healthMetricValue}>
-                {comprehensiveHistoryData && comprehensiveHistoryData.overview 
-                  ? comprehensiveHistoryData.overview.respiratoryRateValueAvg
-                  : '---'} <Text style={styles.healthMetricUnit}>BPM</Text>
-              </Text>
-              <View style={styles.healthMetricStatusContainer}>
-                {comprehensiveHistoryData && comprehensiveHistoryData.overview && 
-                  (() => {
-                    const respiratoryRate = comprehensiveHistoryData.overview.respiratoryRateValueAvg;
-                    let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
-                    let statusText = 'Bình thường';
-                    
-                    if (respiratoryRate < 12) {
-                      statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
-                      statusText = 'Thấp';
-                    } else if (respiratoryRate > 20) {
-                      statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
-                      statusText = 'Cao';
-                    }
-                    
-                    return (
-                      <>
-                        <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
-                        <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
-                      </>
-                    );
-                  })()
-                }
-                {(!comprehensiveHistoryData || !comprehensiveHistoryData.overview) && (
-                  <Text style={styles.healthMetricStatusText}>N/A</Text>
-                )}
-              </View>
-            </View>
               </TouchableOpacity>
-            </View>
-          </>
-        )}
-      </ScrollView>
-      <Modal
-        visible={isSyncing}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.syncDialogContainer}>
-            <View style={styles.syncDialogHeader}>
-              <Animated.View 
-                style={{
-                  transform: [{ rotate: rotateInterpolate }]
-                }}
+
+              <TouchableOpacity
+                style={styles.healthSummaryHeader}
+                onPress={onNavigateToHealthStats}
               >
-                <MaterialCommunityIcons 
-                  name="sync" 
-                  size={28} 
-                  color="#40A9FF" 
-                />
-              </Animated.View>
-              <Text style={styles.syncDialogTitle}>Đang đồng bộ dữ liệu</Text>
-            </View>
-            
-            <View style={styles.syncServiceContainer}>
-              <Animated.View 
-                style={[styles.syncIconContainer, {
-                  transform: [{ scale: pulseAnim }]
-                }]}
-              >
-                <MaterialCommunityIcons 
-                  name={currentService === 'heartHistory' ? "heart-pulse" : 
-                       currentService === 'sleepHistory' ? "sleep" : 
-                       currentService === 'sportHistory' ? "run-fast" : 
-                       currentService === 'bloodPressureHistory' ? "heart-flash" : 
-                       currentService === 'comprehensiveMeasurement' ? "clipboard-pulse-outline" : 
-                       "cloud-sync"} 
-                  size={28} 
-                  color={currentService === 'heartHistory' ? "#FB6F92" : 
-                         currentService === 'sleepHistory' ? "#69C0FF" : 
-                         currentService === 'sportHistory' ? "#95DE64" : 
-                         currentService === 'bloodPressureHistory' ? "#FF8FAB" : 
-                         currentService === 'comprehensiveMeasurement' ? "#FFCF33" : 
-                         "#40A9FF"} 
-                />
-              </Animated.View>
-              <Text style={styles.syncServiceName}>
-                {currentService ? getServiceName(currentService) : 'Chuẩn bị đồng bộ...'}
+                <View style={styles.healthSummaryTitleContainer}>
+                  <MaterialCommunityIcons name="heart-pulse" size={22} color="#FB6F92" style={styles.healthSummaryIcon} />
+                  <Text style={styles.healthSummaryTitle}>Tổng quan sức khỏe</Text>
+                </View>
+                <View style={styles.healthSummaryViewAll}>
+                  <Text style={styles.healthSummaryViewAllText}>Xem tất cả</Text>
+                  <View style={styles.healthSummaryArrowContainer}>
+                    <MaterialCommunityIcons name="chevron-right" size={16} color="#FFF" />
+                  </View>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.healthMetricsContainer}>
+                <TouchableOpacity
+                  style={styles.healthMetricCard}
+                  onPress={onNavigateToHeartRate}
+                >
+                  <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF0F6' }]}>
+                    <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#FB6F92" />
+                  </View>
+                  <View style={styles.healthMetricContent}>
+                    <Text style={styles.healthMetricTitle}>Nhịp tim</Text>
+                    <Text style={styles.healthMetricValue}>
+                      {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0
+                        ? heartHistoryData.data[heartHistoryData.data.length - 1].heartValue
+                        : '---'} <Text style={styles.healthMetricUnit}>BPM</Text>
+                    </Text>
+                    <View style={styles.healthMetricStatusContainer}>
+                      {heartHistoryData && heartHistoryData.data && heartHistoryData.data.length > 0 &&
+                        (() => {
+                          const heartRate = heartHistoryData.data[heartHistoryData.data.length - 1].heartValue;
+                          let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
+                          let statusText = 'Bình thường';
+
+                          if (heartRate < 60) {
+                            statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
+                            statusText = 'Thấp';
+                          } else if (heartRate > 100) {
+                            statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
+                            statusText = 'Cao';
+                          }
+
+                          return (
+                            <>
+                              <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                              <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                            </>
+                          );
+                        })()
+                      }
+                      {(!heartHistoryData || !heartHistoryData.data || heartHistoryData.data.length === 0) && (
+                        <Text style={styles.healthMetricStatusText}>N/A</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.healthMetricCard}
+                  onPress={onNavigateToSpO2}
+                >
+                  <View style={[styles.healthMetricIconContainer, { backgroundColor: '#F6FFED' }]}>
+                    <MaterialCommunityIcons name={"water-percent" as any} size={22} color="#95DE64" />
+                  </View>
+                  <View style={styles.healthMetricContent}>
+                    <Text style={styles.healthMetricTitle}>SpO2</Text>
+                    <Text style={styles.healthMetricValue}>
+                      {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0
+                        ? comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue
+                        : '---'} <Text style={styles.healthMetricUnit}>%</Text>
+                    </Text>
+                    <View style={styles.healthMetricStatusContainer}>
+                      {comprehensiveHistoryData && comprehensiveHistoryData.data && comprehensiveHistoryData.data.length > 0 &&
+                        (() => {
+                          const spo2 = comprehensiveHistoryData.data[comprehensiveHistoryData.data.length - 1].OOValue;
+                          let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái tốt
+                          let statusText = 'Tốt';
+
+                          if (spo2 < 90) {
+                            statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái thấp
+                            statusText = 'Thấp';
+                          } else if (spo2 < 95) {
+                            statusColor = '#FAAD14'; // Màu vàng cho trạng thái bình thường
+                            statusText = 'Bình thường';
+                          }
+
+                          return (
+                            <>
+                              <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                              <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                            </>
+                          );
+                        })()
+                      }
+                      {(!comprehensiveHistoryData || !comprehensiveHistoryData.data || comprehensiveHistoryData.data.length === 0) && (
+                        <Text style={styles.healthMetricStatusText}>N/A</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.healthMetricCard}
+                  onPress={onNavigateToHealthStats}
+                >
+                  <View style={[styles.healthMetricIconContainer, { backgroundColor: '#E6F7FF' }]}>
+                    <MaterialCommunityIcons name={"shoe-print" as any} size={22} color="#40A9FF" />
+                  </View>
+                  <View style={styles.healthMetricContent}>
+                    <Text style={styles.healthMetricTitle}>Bước chân</Text>
+                    <Text style={styles.healthMetricValue}>
+                      {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0
+                        ? sportHistoryData.data[sportHistoryData.data.length - 1].sportStep.toLocaleString('vi-VN')
+                        : '---'}
+                    </Text>
+                    <View style={styles.healthMetricProgressContainer}>
+                      {sportHistoryData && sportHistoryData.data && sportHistoryData.data.length > 0 && (
+                        <>
+                          <View style={styles.healthMetricProgressBar}>
+                            <View
+                              style={[
+                                styles.healthMetricProgressFill,
+                                {
+                                  width: `${Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}%`,
+                                  backgroundColor: '#40A9FF'
+                                }
+                              ]}
+                            />
+                          </View>
+                          <Text style={styles.healthMetricProgressText}>
+                            {Math.min(100, Math.round((sportHistoryData.data[sportHistoryData.data.length - 1].sportStep / 10000) * 100))}%
+                          </Text>
+                        </>
+                      )}
+                      {(!sportHistoryData || !sportHistoryData.data || sportHistoryData.data.length === 0) && (
+                        <Text style={styles.healthMetricStatusText}>N/A</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.healthMetricCard}
+                  onPress={onNavigateToHealthStats}
+                >
+                  <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFF7CD' }]}>
+                    <MaterialCommunityIcons name={"heart-flash" as any} size={22} color="#FFC53D" />
+                  </View>
+                  <View style={styles.healthMetricContent}>
+                    <Text style={styles.healthMetricTitle}>Huyết Áp</Text>
+                    <Text style={styles.healthMetricValue}>
+                      {bloodPressureHistoryData && bloodPressureHistoryData.historyData && bloodPressureHistoryData.historyData.length > 0
+                        ? `${bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodSBP}/${bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodDBP}`
+                        : '---'} <Text style={styles.healthMetricUnit}>mmHg</Text>
+                    </Text>
+                    <View style={styles.healthMetricStatusContainer}>
+                      {bloodPressureHistoryData && bloodPressureHistoryData.historyData && bloodPressureHistoryData.historyData.length > 0 &&
+                        (() => {
+                          const systolic = bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodSBP;
+                          const diastolic = bloodPressureHistoryData.historyData[bloodPressureHistoryData.historyData.length - 1].bloodDBP;
+                          let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
+                          let statusText = 'Bình thường';
+
+                          if (systolic > 140 || diastolic > 90) {
+                            statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
+                            statusText = 'Cao';
+                          } else if (systolic < 90 || diastolic < 60) {
+                            statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
+                            statusText = 'Thấp';
+                          }
+
+                          return (
+                            <>
+                              <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                              <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                            </>
+                          );
+                        })()
+                      }
+                      {(!bloodPressureHistoryData || !bloodPressureHistoryData.historyData || bloodPressureHistoryData.historyData.length === 0) && (
+                        <Text style={styles.healthMetricStatusText}>N/A</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.healthMetricCard}
+                  onPress={onNavigateToHealthStats}
+                >
+                  <View style={[styles.healthMetricIconContainer, { backgroundColor: '#FFE8F7' }]}>
+                    <MaterialCommunityIcons name={"heart-pulse" as any} size={22} color="#F759AB" />
+                  </View>
+                  <View style={styles.healthMetricContent}>
+                    <Text style={styles.healthMetricTitle}>Biến thiên nhịp tim</Text>
+                    <Text style={styles.healthMetricValue}>
+                      {comprehensiveHistoryData && comprehensiveHistoryData.overview
+                        ? comprehensiveHistoryData.overview.hrvValueAvg
+                        : '---'} <Text style={styles.healthMetricUnit}>ms</Text>
+                    </Text>
+                    <View style={styles.healthMetricStatusContainer}>
+                      {comprehensiveHistoryData && comprehensiveHistoryData.overview &&
+                        (() => {
+                          const hrvValue = comprehensiveHistoryData.overview.hrvValueAvg;
+                          let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái tốt
+                          let statusText = 'Tốt';
+
+                          if (hrvValue < 30) {
+                            statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái thấp
+                            statusText = 'Thấp';
+                          } else if (hrvValue < 50) {
+                            statusColor = '#FAAD14'; // Màu vàng cho trạng thái trung bình
+                            statusText = 'Trung bình';
+                          }
+
+                          return (
+                            <>
+                              <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                              <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                            </>
+                          );
+                        })()
+                      }
+                      {(!comprehensiveHistoryData || !comprehensiveHistoryData.overview) && (
+                        <Text style={styles.healthMetricStatusText}>N/A</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.healthMetricCard}
+                  onPress={onNavigateToHealthStats}
+                >
+                  <View style={[styles.healthMetricIconContainer, { backgroundColor: '#D9F7BE' }]}>
+                    <MaterialCommunityIcons name={"lungs" as any} size={22} color="#73D13D" />
+                  </View>
+                  <View style={styles.healthMetricContent}>
+                    <Text style={styles.healthMetricTitle}>Tần số hô hấp</Text>
+                    <Text style={styles.healthMetricValue}>
+                      {comprehensiveHistoryData && comprehensiveHistoryData.overview
+                        ? comprehensiveHistoryData.overview.respiratoryRateValueAvg
+                        : '---'} <Text style={styles.healthMetricUnit}>BPM</Text>
+                    </Text>
+                    <View style={styles.healthMetricStatusContainer}>
+                      {comprehensiveHistoryData && comprehensiveHistoryData.overview &&
+                        (() => {
+                          const respiratoryRate = comprehensiveHistoryData.overview.respiratoryRateValueAvg;
+                          let statusColor = '#52C41A'; // Mặc định là màu xanh cho trạng thái bình thường
+                          let statusText = 'Bình thường';
+
+                          if (respiratoryRate < 12) {
+                            statusColor = '#FAAD14'; // Màu vàng cho trạng thái thấp
+                            statusText = 'Thấp';
+                          } else if (respiratoryRate > 20) {
+                            statusColor = '#FF4D4F'; // Màu đỏ cho trạng thái cao
+                            statusText = 'Cao';
+                          }
+
+                          return (
+                            <>
+                              <View style={[styles.healthMetricStatusDot, { backgroundColor: statusColor }]} />
+                              <Text style={[styles.healthMetricStatusText, { color: statusColor }]}>{statusText}</Text>
+                            </>
+                          );
+                        })()
+                      }
+                      {(!comprehensiveHistoryData || !comprehensiveHistoryData.overview) && (
+                        <Text style={styles.healthMetricStatusText}>N/A</Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+        </ScrollView>
+        <Modal
+          visible={isSyncing}
+          transparent={true}
+          animationType="fade"
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.syncDialogContainer}>
+              <View style={styles.syncDialogHeader}>
+                <Animated.View
+                  style={{
+                    transform: [{ rotate: rotateInterpolate }]
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name="sync"
+                    size={28}
+                    color="#40A9FF"
+                  />
+                </Animated.View>
+                <Text style={styles.syncDialogTitle}>Đang đồng bộ dữ liệu</Text>
+              </View>
+
+              <View style={styles.syncServiceContainer}>
+                <Animated.View
+                  style={[styles.syncIconContainer, {
+                    transform: [{ scale: pulseAnim }]
+                  }]}
+                >
+                  <MaterialCommunityIcons
+                    name={currentService === 'heartHistory' ? "heart-pulse" :
+                      currentService === 'sleepHistory' ? "sleep" :
+                        currentService === 'sportHistory' ? "run-fast" :
+                          currentService === 'bloodPressureHistory' ? "heart-flash" :
+                            currentService === 'comprehensiveMeasurement' ? "clipboard-pulse-outline" :
+                              "cloud-sync"}
+                    size={28}
+                    color={currentService === 'heartHistory' ? "#FB6F92" :
+                      currentService === 'sleepHistory' ? "#69C0FF" :
+                        currentService === 'sportHistory' ? "#95DE64" :
+                          currentService === 'bloodPressureHistory' ? "#FF8FAB" :
+                            currentService === 'comprehensiveMeasurement' ? "#FFCF33" :
+                              "#40A9FF"}
+                  />
+                </Animated.View>
+                <Text style={styles.syncServiceName}>
+                  {currentService ? getServiceName(currentService) : 'Chuẩn bị đồng bộ...'}
+                </Text>
+              </View>
+
+              <View style={styles.progressContainer}>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[styles.progressBarFill, { width: `${syncProgress}%` }]}
+                  />
+                </View>
+                <Text style={styles.progressText}>{syncProgress}%</Text>
+              </View>
+
+              <Text style={styles.syncMessage}>
+                Vui lòng không tắt ứng dụng hoặc ngắt kết nối thiết bị trong quá trình đồng bộ
               </Text>
             </View>
-            
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBarBackground}>
-                <View 
-                  style={[styles.progressBarFill, { width: `${syncProgress}%` }]} 
-                />
-              </View>
-              <Text style={styles.progressText}>{syncProgress}%</Text>
-            </View>
-            
-            <Text style={styles.syncMessage}>
-              Vui lòng không tắt ứng dụng hoặc ngắt kết nối thiết bị trong quá trình đồng bộ
-            </Text>
           </View>
-        </View>
-      </Modal>
-    </SafeAreaView>
+        </Modal>
+      </SafeAreaView>
+    </DrawerLayoutAndroid>
   );
 };
 
@@ -834,6 +961,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#666',
+  },
+  batteryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   connectDeviceCard: {
     backgroundColor: 'white',
@@ -1266,6 +1397,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
+  // Styles cho drawer thông tin thiết bị
+  drawerContainer: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    padding: 16,
+  },
+  drawerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    marginBottom: 16,
+  },
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  deviceInfoList: {
+    flex: 1,
+  },
+  deviceInfoItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  deviceInfoLabel: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  deviceInfoValue: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+  },
 });
 
-export default HomeScreen; 
+export default HomeScreen;

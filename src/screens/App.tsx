@@ -14,6 +14,8 @@ import HealthStatsScreen from './HealthStats';
 import CustomModal from '../components/CustomModal';
 import { HealthDataProvider } from '../contexts/HealthDataProvider';
 import { ContextConnector } from '../services/SyncHealthDataIntoCloud';
+import { DeviceInfoProvider } from '../contexts/DeviceInfoContext';
+import { ContextConnectorDeviceInfo } from '../services/DeviceInfoService';
 
 // Enum cho các màn hình
 enum AppScreen {
@@ -320,32 +322,35 @@ export default function App() {
 
   return (
     <HealthDataProvider>
-      <ContextConnector />
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
-        <View style={styles.container}>
-          {renderConnectedScreens()}
-        </View>
+      <DeviceInfoProvider>
+        <ContextConnector />
+        <ContextConnectorDeviceInfo />
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+          <View style={styles.container}>
+            {renderConnectedScreens()}
+          </View>
         
-        {/* Modal để hiển thị DeviceScanner */}
-        <CustomModal
-          visible={showScanner}
-          onClose={() => {
-            console.log('Đóng CustomModal');
-            setShowScanner(false);
-          }}
-        >
-          <DeviceScanner
-            isScanning={isScanning}
-            devices={devices}
-            onStartScan={startScan}
-            onConnectDevice={connectToDevice}
-            isConnecting={isConnecting}
-            onBack={() => setShowScanner(false)}
-            onDisconnectDevice={disconnectFromDevice}
-          />
-        </CustomModal>
-      </SafeAreaView>
+          {/* Modal để hiển thị DeviceScanner */}
+          <CustomModal
+            visible={showScanner}
+            onClose={() => {
+              console.log('Đóng CustomModal');
+              setShowScanner(false);
+            }}
+          >
+            <DeviceScanner
+              isScanning={isScanning}
+              devices={devices}
+              onStartScan={startScan}
+              onConnectDevice={connectToDevice}
+              isConnecting={isConnecting}
+              onBack={() => setShowScanner(false)}
+              onDisconnectDevice={disconnectFromDevice}
+            />
+          </CustomModal>
+        </SafeAreaView>
+      </DeviceInfoProvider>
     </HealthDataProvider>
   );
 }

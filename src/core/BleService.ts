@@ -26,6 +26,9 @@ class BleService {
   private isConnected: boolean = false;
   private isScanningDevices: boolean = false;
   private connectionCallback: ((connected: boolean) => void) | null = null;
+  private commandSubscription: any = null;
+  private dataSubscription: any = null;
+  private serviceSubscriptions: any[] = [];
 
   private constructor() {
     this.bleManager = new BleManager();
@@ -129,6 +132,10 @@ class BleService {
       device.onDisconnected(() => {
         console.log('Thiết bị đã ngắt kết nối');
         this.isConnected = false;
+        
+        // Hủy đăng ký lắng nghe thông báo trước khi đặt device = null
+        this.cancelAllNotifications();
+        
         this.device = null;
         if (this.connectionCallback) {
           this.connectionCallback(false);
@@ -156,6 +163,9 @@ class BleService {
     if (!this.device) return false;
 
     try {
+      // Hủy đăng ký lắng nghe thông báo trước khi ngắt kết nối
+      this.cancelAllNotifications();
+      
       await this.device.cancelConnection();
       this.device = null;
       this.isConnected = false;
@@ -177,6 +187,9 @@ class BleService {
     try {
       // Ngắt kết nối thiết bị hiện tại nếu có
       if (this.device) {
+        // Hủy đăng ký lắng nghe thông báo trước khi ngắt kết nối
+        this.cancelAllNotifications();
+        
         await this.device.cancelConnection();
         this.device = null;
         this.isConnected = false;
@@ -211,7 +224,7 @@ class BleService {
     
     try {
       // Bật thông báo cho COMMAND_CHARACTERISTIC
-      await this.device.monitorCharacteristicForService(
+      this.commandSubscription = this.device.monitorCharacteristicForService(
         SERVICE_UUID,
         COMMAND_CHARACTERISTIC_UUID,
         this.handleCharacteristicUpdate.bind(this)
@@ -219,7 +232,7 @@ class BleService {
       console.log('Đã bật thông báo cho Command Characteristic');
       
       // Bật thông báo cho DATA_CHARACTERISTIC
-      await this.device.monitorCharacteristicForService(
+      this.dataSubscription = this.device.monitorCharacteristicForService(
         SERVICE_UUID,
         DATA_CHARACTERISTIC_UUID,
         this.handleCharacteristicUpdate.bind(this)
@@ -235,7 +248,17 @@ class BleService {
 
   // Xử lý dữ liệu từ characteristic
   private handleCharacteristicUpdate(error: Error | null, characteristic: Characteristic | null): void {
+    // Kiểm tra nếu thiết bị đã ngắt kết nối hoặc không còn kết nối
+    if (!this.device || !this.isConnected) {
+      return; // Không xử lý nếu không còn kết nối
+    }
+    
     if (error) {
+      // Kiểm tra nếu lỗi là do thiết bị ngắt kết nối
+      if (error.message && error.message.includes('disconnected')) {
+        // Đã được xử lý bởi sự kiện onDisconnected, không cần log lỗi
+        return;
+      }
       console.error('Lỗi khi nhận dữ liệu:', error);
       return;
     }
@@ -371,6 +394,87 @@ class BleService {
     return await HeartRateService.getInstance().stopHeartRate(this.device);
   }
 
+  /**
+   * Hủy đăng ký lắng nghe thông báo từ các characteristic của BleService
+   */
+  private cancelNotifications(): void {
+    try {
+      if (this.commandSubscription) {
+        this.commandSubscription.remove();
+        this.commandSubscription = null;
+      }
+      
+      if (this.dataSubscription) {
+        this.dataSubscription.remove();
+        this.dataSubscription = null;
+      }
+      
+      console.log('Đã hủy đăng ký lắng nghe thông báo từ các characteristic của BleService');
+    } catch (error) {
+      console.error('Lỗi khi hủy đăng ký lắng nghe thông báo:', error);
+    }
+  }
+  
+  /**
+   * Hủy tất cả đăng ký lắng nghe thông báo, bao gồm cả từ các dịch vụ con
+   * Gọi phương thức này trước khi ngắt kết nối thiết bị
+   */
+  private cancelAllNotifications(): void {
+    try {
+      // Hủy đăng ký của BleService
+      this.cancelNotifications();
+      
+      // Hủy đăng ký từ các dịch vụ con
+      for (const subscription of this.serviceSubscriptions) {
+        if (subscription && typeof subscription.remove === 'function') {
+          subscription.remove();
+        }
+      }
+      
+      // Đặt lại mảng đăng ký
+      this.serviceSubscriptions = [];
+      
+      // Đặt lại trạng thái của các dịch vụ con
+      this.resetServiceStates();
+      
+      console.log('Đã hủy tất cả đăng ký lắng nghe thông báo');
+    } catch (error) {
+      console.error('Lỗi khi hủy tất cả đăng ký lắng nghe thông báo:', error);
+    }
+  }
+  
+  /**
+   * Đăng ký một subscription từ dịch vụ con
+   * @param subscription Subscription cần đăng ký
+   */
+  public registerServiceSubscription(subscription: any): void {
+    if (subscription) {
+      this.serviceSubscriptions.push(subscription);
+    }
+  }
+  
+  /**
+   * Đặt lại trạng thái của các dịch vụ con
+   */
+  private resetServiceStates(): void {
+    try {
+      // Đặt lại trạng thái của SpO2Service
+      const spo2Service = require('../services/SpO2Service').default.getInstance();
+      if (spo2Service && typeof spo2Service.resetState === 'function') {
+        spo2Service.resetState();
+      }
+      
+      // Đặt lại trạng thái của HeartRateService
+      const heartRateService = require('../services/HeartRateService').default.getInstance();
+      if (heartRateService && typeof heartRateService.resetState === 'function') {
+        heartRateService.resetState();
+      }
+      
+      console.log('Đã đặt lại trạng thái của các dịch vụ con');
+    } catch (error) {
+      console.error('Lỗi khi đặt lại trạng thái của các dịch vụ con:', error);
+    }
+  }
 }
 
 export default BleService;
