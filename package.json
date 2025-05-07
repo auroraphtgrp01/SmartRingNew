@@ -12,20 +12,30 @@
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
     "base64-js": "^1.5.1",
-    "expo": "~52.0.42",
+    "expo": "~52.0.46",
     "expo-status-bar": "~2.0.1",
+    "metro": "^0.81.0",
+    "metro-config": "^0.81.0",
+    "metro-resolver": "^0.81.0",
     "react": "18.3.1",
-    "react-dom": "^19.1.0",
-    "react-native": "0.76.8",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.9",
     "react-native-ble-plx": "^3.5.0",
     "react-native-web": "~0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.27.2",
     "@types/react": "~18.3.12",
-    "@types/react-native": "^0.73.0",
     "typescript": "^5.3.3"
   },
   "private": true,
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
+  }
 }
